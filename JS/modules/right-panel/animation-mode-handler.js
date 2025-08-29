@@ -1,12 +1,7 @@
 /* JS/modules/right-panel/animation-mode-handler.js */
 
-import { setAnimationMode, setSensitivity } from '../character/character-state.js';
+import { setAnimationMode } from '../character/character-state.js';
 
-/**
- * Mapeia o valor numérico do slider para um rótulo de texto.
- * @param {number} value - O valor de 0 a 100.
- * @returns {string} - O rótulo correspondente ('Baixo', 'Médio', 'Alto').
- */
 function mapSensitivityValueToLabel(value) {
     const numericValue = parseInt(value, 10);
     if (numericValue < 34) return 'Baixo';
@@ -16,7 +11,6 @@ function mapSensitivityValueToLabel(value) {
 
 export function initialize(timelineController) {
     const container = document.getElementById('animation-mode-module');
-    // O HTML agora inclui o slider de sensibilidade com os novos textos e valores
     container.innerHTML = `
         <h3>Modo de Animação da Boca</h3>
         <div class="segmented-control" id="animation-mode-toggle">
@@ -37,14 +31,12 @@ export function initialize(timelineController) {
     const sensitivitySlider = container.querySelector('#sensitivity-slider');
     const sensitivityValue = container.querySelector('#sensitivity-value');
 
-    // Listener para o slider de sensibilidade
     sensitivitySlider.addEventListener('input', (e) => {
         const value = e.target.value;
         setSensitivity(value);
         sensitivityValue.textContent = mapSensitivityValueToLabel(value);
     });
 
-    // Listener para os botões Auto/Manual
     toggle.addEventListener('click', (e) => {
         const button = e.target.closest('button');
         if (!button) return;
@@ -53,8 +45,13 @@ export function initialize(timelineController) {
         button.classList.add('active');
 
         const mode = button.dataset.mode;
-        setAnimationMode(mode);
+        setAnimationMode(mode); // Define o estado central
 
+        // ATUALIZAÇÃO: Dispara um evento para que outros módulos (como o de fonemas) possam reagir
+        const event = new CustomEvent('animationModeChanged', { detail: { mode } });
+        document.dispatchEvent(event);
+
+        // Lógica para ativar/desativar o slider
         if (mode === 'manual') {
             sensitivityContainer.classList.add('disabled');
         } else {
