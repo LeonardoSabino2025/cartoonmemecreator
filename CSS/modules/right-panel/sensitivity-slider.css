@@ -1,0 +1,10 @@
+/* CSS/modules/right-panel/sensitivity-slider.css */
+
+#sensitivity-container {
+    transition: opacity 0.3s ease-in-out;
+}
+
+#sensitivity-container.disabled {
+    opacity: 0.5;
+    pointer-events: none; /* Impede a interação com o slider desativado */
+}

@@ -8,7 +8,6 @@ const analyser = audioContext.createAnalyser();
 analyser.fftSize = 256;
 const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
-// --- Variáveis de estado do player ---
 let audioBuffer = null;
 let sourceNode = null;
 let isPlaying = false;
@@ -16,8 +15,6 @@ let startTime = 0;
 let pauseTime = 0;
 let animationFrameId = null;
 
-// --- Variáveis para a lógica de Lip Sync Automático ---
-const sensitivityThreshold = 20;
 const mouthChangeInterval = 0.15;
 let lastMouthChangeTime = 0;
 let currentRandomMouth = null;
@@ -35,11 +32,18 @@ function dispatchEvent(name, detail) {
     document.dispatchEvent(new CustomEvent(name, { detail }));
 }
 
-function getAutoLipSyncMouth(moodMouth, currentTime) {
+/**
+ * Lógica que decide qual boca mostrar no modo automático.
+ * @param {object} characterState - O objeto de estado atual contendo humor e sensibilidade.
+ * @param {number} currentTime - O tempo atual do áudio.
+ * @returns {string} O nome do SVG da boca a ser exibida.
+ */
+function getAutoLipSyncMouth(characterState, currentTime) {
     analyser.getByteFrequencyData(dataArray);
     const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
 
-    if (average > sensitivityThreshold) {
+    // ATUALIZAÇÃO: Lê a sensibilidade do estado central em vez de usar um valor fixo.
+    if (average > characterState.sensitivity) {
         if (currentTime - lastMouthChangeTime > mouthChangeInterval) {
             const randomIndex = Math.floor(Math.random() * randomMouthList.length);
             currentRandomMouth = randomMouthList[randomIndex];
@@ -48,7 +52,7 @@ function getAutoLipSyncMouth(moodMouth, currentTime) {
         return currentRandomMouth;
     } else {
         currentRandomMouth = null;
-        return moodMouth;
+        return characterState.mood; // Usa o humor do estado para o silêncio
     }
 }
 
@@ -62,7 +66,7 @@ function updateLoop() {
     
     let mouthToRender = null;
     if (characterState.animationMode === 'auto') {
-        mouthToRender = getAutoLipSyncMouth(characterState.mood, currentTime);
+        mouthToRender = getAutoLipSyncMouth(characterState, currentTime);
     } else {
         mouthToRender = timelineController.getValueAtTime('phoneme', currentTime);
     }
@@ -86,9 +90,6 @@ function updateLoop() {
     }
 }
 
-/**
- * Reseta as variáveis da animação automática para evitar o "congelamento" da boca.
- */
 function resetAutoLipSyncState() {
     lastMouthChangeTime = 0;
     currentRandomMouth = null;
@@ -135,9 +136,7 @@ const api = {
         sourceNode.stop();
         isPlaying = false;
         
-        // CORREÇÃO: Reseta o estado da boca ao pausar
         resetAutoLipSyncState();
-
         dispatchEvent('statechange', { isPlaying: false });
         cancelAnimationFrame(animationFrameId);
     },
@@ -148,7 +147,6 @@ const api = {
         
         pauseTime = Math.max(0, Math.min(time, audioBuffer.duration));
         
-        // CORREÇÃO: Reseta o estado da boca ao mover a timeline
         resetAutoLipSyncState();
 
         dispatchEvent('timeupdate', { 
@@ -171,13 +169,9 @@ const api = {
         pauseTime = 0;
         startTime = 0;
         
-        // CORREÇÃO: Garante que o estado seja resetado aqui também
         resetAutoLipSyncState();
-
         cancelAnimationFrame(animationFrameId);
-
         dispatchEvent('unloaded');
-        console.log("Player de áudio resetado.");
     },
 
     formatTime: formatTime,

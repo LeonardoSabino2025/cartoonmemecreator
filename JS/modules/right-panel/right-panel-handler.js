@@ -2,7 +2,6 @@
 
 import { initialize as initAnimationMode } from './animation-mode-handler.js';
 import { initialize as initExpression } from './expression-handler.js';
-// (Importaremos os outros handlers aqui quando forem criados)
 
 export function initialize(characterAPI, timelineController) {
     const container = document.getElementById('right-panel');
@@ -12,7 +11,7 @@ export function initialize(characterAPI, timelineController) {
         <div class="control-group" id="expression-module"></div>
         `;
 
-    // Inicializa cada submódulo, passando as dependências necessárias
+    // Inicializa cada submódulo do painel direito
     initAnimationMode(timelineController);
     initExpression(characterAPI, timelineController);
 }

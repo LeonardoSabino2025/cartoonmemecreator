@@ -1,6 +1,7 @@
 /* JS/modules/left-panel/sliders-handler.js */
 
-import { initialize as initGenderHandler } from './gender-handler.js';
+import { setSensitivity } from '../character/character-state.js';
+import * as characterAPI from '../character/character-api.js';
 
 function createSliderHTML(id, label, min, max, value, unit) {
     return `
@@ -13,42 +14,42 @@ function createSliderHTML(id, label, min, max, value, unit) {
 }
 
 export function initialize(characterAPI) {
+    // Injeta o HTML apenas para os sliders que PERMANECEM no painel esquerdo
     document.getElementById('mouth-size-module').innerHTML = createSliderHTML('mouth-size', 'Tamanho da Boca', 100, 600, 320, 'px');
-    document.getElementById('eye-distance-module').innerHTML = createSliderHTML('eye-distance', 'Distância dos Olhos', 0, 150, 20, 'px'); // Começa com min 0
+    document.getElementById('eye-distance-module').innerHTML = createSliderHTML('eye-distance', 'Distância dos Olhos', 0, 150, 20, 'px');
     document.getElementById('mouth-y-module').innerHTML = createSliderHTML('mouth-y', 'Distância Boca-Olhos (Vertical)', -150, 150, 20, 'px');
 
+    // Mapeia apenas os sliders restantes às suas funções
     const sliders = [
-        { id: 'mouth-size', action: characterAPI.setMouthSize, unit: 'px' },
-        { id: 'eye-distance', action: characterAPI.setEyeDistance, unit: 'px' },
-        { id: 'mouth-y', action: characterAPI.setMouthYPosition, unit: 'px' }
+        { id: 'mouth-size',    action: characterAPI.setMouthSize,    unit: 'px' },
+        { id: 'eye-distance',  action: characterAPI.setEyeDistance,  unit: 'px' },
+        { id: 'mouth-y',       action: characterAPI.setMouthYPosition, unit: 'px' }
     ];
 
+    // Adiciona um listener genérico para estes sliders
     sliders.forEach(({ id, action, unit }) => {
         const slider = document.getElementById(`${id}-slider`);
         const valueSpan = document.getElementById(`${id}-value`);
+        
         slider.addEventListener('input', (e) => {
             const value = e.target.value;
             valueSpan.textContent = `${value}${unit}`;
             action(value);
+
         });
     });
 
-    // Lógica para ajustar o slider de distância dos olhos
+    // A lógica para ajustar o limite do slider de distância dos olhos continua aqui
     const eyeDistanceSlider = document.getElementById('eye-distance-slider');
-    
-    // Escuta o evento personalizado que o gender-handler vai disparar
     document.addEventListener('genderChanged', (event) => {
         const gender = event.detail.gender;
         if (gender === 'female') {
-            // Permite que os olhos se aproximem mais (até se sobreporem)
             eyeDistanceSlider.min = "-50";
         } else {
-            // Volta ao padrão para o masculino
             eyeDistanceSlider.min = "0";
-            // Se o valor atual for negativo, reseta para 0 para não bugar
             if (parseInt(eyeDistanceSlider.value) < 0) {
                 eyeDistanceSlider.value = 0;
-                eyeDistanceSlider.dispatchEvent(new Event('input')); // Dispara o evento para atualizar a tela
+                eyeDistanceSlider.dispatchEvent(new Event('input'));
             }
         }
     });

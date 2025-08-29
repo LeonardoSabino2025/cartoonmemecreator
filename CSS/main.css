@@ -7,6 +7,7 @@
 @import url('modules/left-panel/sliders.css');
 @import url('modules/playback-panel/playback.css');
 @import url('modules/right-panel/animation-panel.css');
+@import url('modules/right-panel/sensitivity-slider.css');
 
 :root {
     --cor-fundo-palco: #00ff00;
