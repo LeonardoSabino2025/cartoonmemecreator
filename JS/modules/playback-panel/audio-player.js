@@ -8,6 +8,7 @@ const analyser = audioContext.createAnalyser();
 analyser.fftSize = 256;
 const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
+// --- Variáveis de estado do player ---
 let audioBuffer = null;
 let sourceNode = null;
 let isPlaying = false;
@@ -15,15 +16,13 @@ let startTime = 0;
 let pauseTime = 0;
 let animationFrameId = null;
 
+// --- Variáveis para a lógica de Lip Sync Automático ---
 const sensitivityThreshold = 20;
 const mouthChangeInterval = 0.15;
 let lastMouthChangeTime = 0;
 let currentRandomMouth = null;
 const randomMouthList = ['a', 'o', 'e', 'u', 'i', 'm', 'ch', 'l', 'r'];
 
-// ====================================================================
-// FUNÇÃO CORRIGIDA 1: formatTime (agora com conteúdo)
-// ====================================================================
 function formatTime(seconds) {
     if (isNaN(seconds) || seconds < 0) return "00:00.00";
     const min = Math.floor(seconds / 60);
@@ -32,9 +31,6 @@ function formatTime(seconds) {
     return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
 }
 
-// ====================================================================
-// FUNÇÃO CORRIGIDA 2: dispatchEvent (agora com conteúdo)
-// ====================================================================
 function dispatchEvent(name, detail) {
     document.dispatchEvent(new CustomEvent(name, { detail }));
 }
@@ -90,6 +86,14 @@ function updateLoop() {
     }
 }
 
+/**
+ * Reseta as variáveis da animação automática para evitar o "congelamento" da boca.
+ */
+function resetAutoLipSyncState() {
+    lastMouthChangeTime = 0;
+    currentRandomMouth = null;
+}
+
 const api = {
     load: (file) => {
         return new Promise((resolve, reject) => {
@@ -97,7 +101,6 @@ const api = {
             reader.onload = (e) => {
                 audioContext.decodeAudioData(e.target.result, (buffer) => {
                     audioBuffer = buffer;
-                    // Esta linha agora vai funcionar porque dispatchEvent tem código
                     dispatchEvent('loaded', { 
                         duration: audioBuffer.duration,
                         formattedDuration: formatTime(audioBuffer.duration)
@@ -132,6 +135,9 @@ const api = {
         sourceNode.stop();
         isPlaying = false;
         
+        // CORREÇÃO: Reseta o estado da boca ao pausar
+        resetAutoLipSyncState();
+
         dispatchEvent('statechange', { isPlaying: false });
         cancelAnimationFrame(animationFrameId);
     },
@@ -142,6 +148,9 @@ const api = {
         
         pauseTime = Math.max(0, Math.min(time, audioBuffer.duration));
         
+        // CORREÇÃO: Reseta o estado da boca ao mover a timeline
+        resetAutoLipSyncState();
+
         dispatchEvent('timeupdate', { 
             currentTime: pauseTime, 
             formattedTime: formatTime(pauseTime),
@@ -161,13 +170,16 @@ const api = {
         sourceNode = null;
         pauseTime = 0;
         startTime = 0;
+        
+        // CORREÇÃO: Garante que o estado seja resetado aqui também
+        resetAutoLipSyncState();
+
         cancelAnimationFrame(animationFrameId);
 
         dispatchEvent('unloaded');
         console.log("Player de áudio resetado.");
     },
 
-    // A função formatTime também precisa ser exportada para uso externo
     formatTime: formatTime,
     getCurrentTime: () => isPlaying ? audioContext.currentTime - startTime : pauseTime,
     getDuration: () => audioBuffer ? audioBuffer.duration : 0,
