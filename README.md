@@ -34,31 +34,45 @@ Studio de Animação_ver3-GEMINI
 │  ├─ U.svg
 │  ├─ W.svg
 │  └─ ZH.svg
-├─ CSS/
+├─ CSS
 │  ├─ main.css
-│  └─ modules/
-│     ├─ character/
+│  └─ modules
+│     ├─ character
 │     │  ├─ eyes.css
 │     │  └─ mouth.css
-│     ├─ left-panel/
+│     ├─ left-panel
 │     │  ├─ buttons.css
 │     │  └─ sliders.css
-│     └─ stage/
-│        └─ stage-layout.css
+│     ├─ playback-panel
+│     │  └─ playback.css
+│     ├─ right-panel
+│     │  └─ animation-panel.css
+│     ├─ stage
+│     │  └─ stage-layout.css
+│     └─ timeline-controller.js
 ├─ index.html
-├─ JS/
-│  ├─ libs/
+├─ JS
+│  ├─ libs
 │  │  └─ html2canvas.min.js
 │  ├─ main.js
-│  └─ modules/
-│     ├─ character/
+│  └─ modules
+│     ├─ character
 │     │  ├─ character-api.js
 │     │  └─ character-dom.js
-│     └─ left-panel/
-│        ├─ audio-handler.js
-│        ├─ gender-handler.js
-│        ├─ mood-handler.js
-│        └─ sliders-handler.js
+│     ├─ left-panel
+│     │  ├─ audio-handler.js
+│     │  ├─ gender-handler.js
+│     │  ├─ mood-handler.js
+│     │  └─ sliders-handler.js
+│     ├─ playback-panel
+│     │  ├─ audio-player.js
+│     │  └─ playback-handler.js
+│     ├─ right-panel
+│     │  ├─ animation-mode-handler.js
+│     │  ├─ expression-handler.js
+│     │  └─ right-panel-handler.js
+│     ├─ stage
+│     └─ timeline-controller.js
 └─ README.md
 
 ```

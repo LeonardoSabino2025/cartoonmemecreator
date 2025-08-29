@@ -1,3 +1,8 @@
+/* JS/modules/left-panel/mood-handler.js */
+
+import * as characterAPI from '../character/character-api.js';
+import { setMood } from '../character/character-state.js';
+
 export function initialize(characterAPI) {
     const container = document.getElementById('mood-module');
     container.innerHTML = `
@@ -15,8 +20,12 @@ export function initialize(characterAPI) {
     moodToggle.addEventListener('click', (e) => {
         const button = e.target.closest('button');
         if (!button) return;
+
         moodToggle.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
         button.classList.add('active');
-        characterAPI.setMouthMood(button.dataset.mood);
+        
+        const mood = button.dataset.mood;
+        characterAPI.setMouthMood(mood);
+        setMood(mood); 
     });
 }

@@ -1,9 +1,12 @@
 /* JS/modules/playback-panel/audio-player.js */
 
-import * as timelineController from '../timeline-controller.js'; // Importa o novo controlador
+import * as timelineController from '../timeline-controller.js';
+import { getState } from '../character/character-state.js';
 
-// Garante que só existe um AudioContext na aplicação
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+const analyser = audioContext.createAnalyser();
+analyser.fftSize = 256;
+const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
 let audioBuffer = null;
 let sourceNode = null;
@@ -12,11 +15,15 @@ let startTime = 0;
 let pauseTime = 0;
 let animationFrameId = null;
 
-/**
- * Formata segundos para o formato MM:SS.ms
- * @param {number} seconds - O tempo em segundos.
- * @returns {string} O tempo formatado.
- */
+const sensitivityThreshold = 20;
+const mouthChangeInterval = 0.15;
+let lastMouthChangeTime = 0;
+let currentRandomMouth = null;
+const randomMouthList = ['a', 'o', 'e', 'u', 'i', 'm', 'ch', 'l', 'r'];
+
+// ====================================================================
+// FUNÇÃO CORRIGIDA 1: formatTime (agora com conteúdo)
+// ====================================================================
 function formatTime(seconds) {
     if (isNaN(seconds) || seconds < 0) return "00:00.00";
     const min = Math.floor(seconds / 60);
@@ -25,45 +32,58 @@ function formatTime(seconds) {
     return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
 }
 
-/**
- * Dispara um evento customizado no documento.
- * @param {string} name - O nome do evento.
- * @param {object} detail - Os dados para enviar com o evento.
- */
+// ====================================================================
+// FUNÇÃO CORRIGIDA 2: dispatchEvent (agora com conteúdo)
+// ====================================================================
 function dispatchEvent(name, detail) {
     document.dispatchEvent(new CustomEvent(name, { detail }));
 }
 
-/**
- * Loop de animação que atualiza a UI enquanto o áudio está tocando.
- */
+function getAutoLipSyncMouth(moodMouth, currentTime) {
+    analyser.getByteFrequencyData(dataArray);
+    const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
+
+    if (average > sensitivityThreshold) {
+        if (currentTime - lastMouthChangeTime > mouthChangeInterval) {
+            const randomIndex = Math.floor(Math.random() * randomMouthList.length);
+            currentRandomMouth = randomMouthList[randomIndex];
+            lastMouthChangeTime = currentTime;
+        }
+        return currentRandomMouth;
+    } else {
+        currentRandomMouth = null;
+        return moodMouth;
+    }
+}
+
 function updateLoop() {
     if (!isPlaying) {
         cancelAnimationFrame(animationFrameId);
         return;
     }
     const currentTime = audioContext.currentTime - startTime;
-
-    // --- NOVA INTEGRAÇÃO COM A TIMELINE ---
-    // Pega os valores da timeline para o tempo atual
-    const expression = timelineController.getValueAtTime('expression', currentTime);
-    // (No futuro, faremos o mesmo para olhar, posição, etc.)
-    // const gaze = timelineController.getValueAtTime('gaze', currentTime);
+    const characterState = getState();
     
+    let mouthToRender = null;
+    if (characterState.animationMode === 'auto') {
+        mouthToRender = getAutoLipSyncMouth(characterState.mood, currentTime);
+    } else {
+        mouthToRender = timelineController.getValueAtTime('phoneme', currentTime);
+    }
+
     dispatchEvent('timeupdate', { 
-        currentTime: currentTime, 
+        currentTime, 
         formattedTime: formatTime(currentTime),
         progress: (currentTime / audioBuffer.duration) * 100,
-        // Envia os dados da animação junto com a atualização de tempo
         animationData: {
-            expression: expression
-            // gaze: gaze, ...
+            expression: timelineController.getValueAtTime('expression', currentTime),
+            mouth: mouthToRender
         }
     });
     
     if (currentTime >= audioBuffer.duration) {
         api.pause();
-        api.seek(audioBuffer.duration); // Garante que vá até o final
+        api.seek(audioBuffer.duration);
         dispatchEvent('ended');
     } else {
         animationFrameId = requestAnimationFrame(updateLoop);
@@ -77,6 +97,7 @@ const api = {
             reader.onload = (e) => {
                 audioContext.decodeAudioData(e.target.result, (buffer) => {
                     audioBuffer = buffer;
+                    // Esta linha agora vai funcionar porque dispatchEvent tem código
                     dispatchEvent('loaded', { 
                         duration: audioBuffer.duration,
                         formattedDuration: formatTime(audioBuffer.duration)
@@ -93,7 +114,9 @@ const api = {
         if (isPlaying || !audioBuffer) return;
         sourceNode = audioContext.createBufferSource();
         sourceNode.buffer = audioBuffer;
-        sourceNode.connect(audioContext.destination);
+        
+        sourceNode.connect(analyser);
+        analyser.connect(audioContext.destination);
 
         startTime = audioContext.currentTime - pauseTime;
         sourceNode.start(0, pauseTime);
@@ -123,7 +146,7 @@ const api = {
             currentTime: pauseTime, 
             formattedTime: formatTime(pauseTime),
             progress: (pauseTime / audioBuffer.duration) * 100,
-            animationData: { // Também envia dados de animação ao buscar manualmente
+            animationData: {
                 expression: timelineController.getValueAtTime('expression', pauseTime)
             }
         });
@@ -144,6 +167,8 @@ const api = {
         console.log("Player de áudio resetado.");
     },
 
+    // A função formatTime também precisa ser exportada para uso externo
+    formatTime: formatTime,
     getCurrentTime: () => isPlaying ? audioContext.currentTime - startTime : pauseTime,
     getDuration: () => audioBuffer ? audioBuffer.duration : 0,
     isPlaying: () => isPlaying

@@ -1,16 +1,33 @@
-/* JS/modules/character/character-api.js - VERSÃO DEFINITIVA */
+/* JS/modules/character/character-api.js */
 
 import * as dom from './character-dom.js';
 
-const moodToSvgMap = {
-    feliz: 'FELIZ.svg', sorrindo: 'SORRINDO.svg', curioso: 'CURIOSO.svg',
-    raiva: 'RAIVA.svg', lezo: 'LEZO.svg',
+// Mapeamento central de todas as bocas disponíveis.
+// Associa uma chave simples (ex: 'a', 'feliz') a um arquivo SVG.
+const mouthMap = {
+    // Fonemas
+    a: 'A.svg',
+    e: 'E.svg',
+    i: 'FVI.svg',
+    o: 'O.svg',
+    u: 'U.svg',
+    m: 'BMP.svg',
+    ch: 'CDGKNSTXYZ.svg',
+    l: 'L.svg',
+    r: 'R.svg',
+    // Humores
+    feliz: 'FELIZ.svg',
+    sorrindo: 'SORRINDO.svg',
+    curioso: 'CURIOSO.svg',
+    raiva: 'RAIVA.svg',
+    lezo: 'LEZO.svg',
 };
 
 const api = {
     /**
-     * Define o gênero do personagem. Em vez de 'toggle', agora remove
-     * explicitamente uma classe e adiciona a outra para garantir o estado correto.
+     * Define o gênero do personagem. Remove a classe de um gênero e adiciona a do outro
+     * para garantir que os estados CSS não se sobreponham.
+     * @param {string} gender - 'male' ou 'female'.
      */
     setGender: (gender) => {
         if (!dom.eyesContainer) return;
@@ -24,25 +41,62 @@ const api = {
         }
     },
     
-    setMouthMood: (mood) => {
-        if (dom.mouthImage) dom.mouthImage.src = `BOCAS/${moodToSvgMap[mood] || 'FELIZ.svg'}`;
+    /**
+     * Função central para trocar a imagem da boca.
+     * Usada tanto pelo humor quanto pela animação de lip sync.
+     * @param {string} key - A chave do fonema ou humor (ex: 'a', 'feliz').
+     */
+    setMouth: (key) => {
+        if (!key || !dom.mouthImage) return;
+        const svgFile = mouthMap[key];
+        // Verifica se o arquivo existe no mapa e se a imagem já não é a correta
+        if (svgFile && !dom.mouthImage.src.endsWith(svgFile)) {
+            dom.mouthImage.src = `BOCAS/${svgFile}`;
+        }
     },
-    
+
+    /**
+     * Atalho para definir a boca de humor. Agora, apenas chama a função setMouth.
+     * @param {string} mood - O nome do humor.
+     */
+    setMouthMood: (mood) => {
+        api.setMouth(mood);
+    },
+
+    /**
+     * Define a largura do container da boca.
+     * @param {number} size - A largura em pixels.
+     */
     setMouthSize: (size) => {
         if (dom.mouthContainer) dom.mouthContainer.style.width = `${size}px`;
     },
     
+    /**
+     * Define a distância entre os olhos controlando a margem do olho direito.
+     * Permite valores negativos para sobreposição.
+     * @param {number} distance - A distância em pixels.
+     */
     setEyeDistance: (distance) => {
-        if (dom.eyesContainer) dom.eyesContainer.style.gap = `${distance}px`;
+        if (dom.rightEye) dom.rightEye.style.marginLeft = `${distance}px`;
     },
     
+    /**
+     * Define a distância vertical entre os olhos e a boca.
+     * @param {number} distance - A distância em pixels.
+     */
     setMouthYPosition: (distance) => {
         if (dom.mouthContainer) dom.mouthContainer.style.marginTop = `${distance}px`;
     },
 
+    /**
+     * Define a expressão facial alterando a classe no container dos olhos.
+     * @param {string} expression - O nome da expressão (ex: 'happy', 'sad').
+     */
     setExpression: (expression) => {
         if (dom.eyesContainer) {
+            // Primeiro, remove todas as classes de expressão possíveis para evitar conflitos.
             dom.eyesContainer.classList.remove('happy', 'sad', 'angry', 'curious', 'suspicious');
+            // Adiciona a nova classe de expressão, se ela existir.
             if (expression) {
                 dom.eyesContainer.classList.add(expression);
             }
@@ -51,21 +105,8 @@ const api = {
 };
 
 /**
- * ATUALIZADO: Função central que lê a timeline e atualiza o personagem.
- * @param {number} time - O tempo atual da animação.
- */
-api.updateFromTimeline = function(time, timelineController) {
-    const expression = timelineController.getValueAtTime('expression', time);
-    if (expression) {
-        this.setExpression(expression);
-    }
-    // No futuro, faremos o mesmo para olhar, posição, etc.
-    // const gaze = timelineController.getValueAtTime('gaze', time);
-    // if (gaze) this.setGaze(gaze);
-};
-
-/**
- * Inicializa o estado visual do personagem e retorna o objeto da API.
+ * Inicializa o estado visual padrão do personagem quando a aplicação carrega.
+ * @returns {object} - Retorna o objeto da API para ser usado por outros módulos.
  */
 export function initialize() {
     if (document.readyState === 'loading') {
@@ -73,8 +114,7 @@ export function initialize() {
         return;
     }
     
-    // Define o estado visual inicial do personagem
-    api.setGender('male'); // Garante que a classe .male seja adicionada no início
+    api.setGender('male');
     api.setMouthMood('feliz');
     api.setMouthSize(320);
     api.setEyeDistance(20);

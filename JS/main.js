@@ -9,27 +9,35 @@ import { initialize as initializePlaybackHandler } from './modules/playback-pane
 import * as timelineController from './modules/timeline-controller.js';
 import { initialize as initializeRightPanel } from './modules/right-panel/right-panel-handler.js';
 
-
 function main() {
     const characterAPI = initializeCharacterAPI();
 
+    // ORDEM DE INICIALIZAÇÃO CORRIGIDA:
+    // 1. Prepara a UI que vai OUVIR os eventos (playback-handler)
+    initializePlaybackHandler();
+    initializeRightPanel(characterAPI, timelineController);
+    
+    // 2. Prepara a UI que vai CAUSAR os eventos (audio-handler, etc)
     audioHandler.initialize();
     genderHandler.initialize(characterAPI);
     moodHandler.initialize(characterAPI);
     slidersHandler.initialize(characterAPI);
     
-    // INICIALIZA O NOVO PAINEL
-    initializePlaybackHandler();
-    initializeRightPanel(characterAPI, timelineController);
-
+    // Listener final para conectar o tempo à animação do personagem
     document.addEventListener('timeupdate', (e) => {
-        if(e.detail.animationData.expression) {
-            characterAPI.setExpression(e.detail.animationData.expression);
+        const animationData = e.detail.animationData;
+        if (!animationData) return;
+
+        if(animationData.expression) {
+            characterAPI.setExpression(animationData.expression);
+        }
+        
+        if(animationData.mouth) {
+            characterAPI.setMouth(animationData.mouth);
         }
     });
     
-    console.log("Sistema modular com painel de playback pronto.");
+    console.log("Sistema modular pronto e funcional.");
 }
 
 document.addEventListener('DOMContentLoaded', main);
-

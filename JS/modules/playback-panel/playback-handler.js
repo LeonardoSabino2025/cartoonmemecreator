@@ -4,11 +4,10 @@ import audioPlayer from './audio-player.js';
 const dom = {};
 let isScrubbing = false;
 
-function render() {
-    const container = document.getElementById('playback-panel');
-    // A verificação de segurança já estava aqui e é uma boa prática.
-    if (!container) return; 
-    
+/**
+ * Cria e injeta o HTML do painel de playback no documento.
+ */
+function render(container) {
     container.innerHTML = `
         <div class="playback-controls">
             <button id="to-start-btn" title="Ir para o início">⏮️</button>
@@ -28,20 +27,9 @@ function render() {
     `;
 }
 
-function queryDOMElements() {
-    const container = document.getElementById('playback-panel');
-    // O erro acontece aqui se 'container' for null.
-    dom.toStartBtn = container.querySelector('#to-start-btn');
-    dom.rewindBtn = container.querySelector('#rewind-btn');
-    dom.playPauseBtn = container.querySelector('#play-pause-btn');
-    dom.forwardBtn = container.querySelector('#forward-btn');
-    dom.toEndBtn = container.querySelector('#to-end-btn');
-    dom.timelineSlider = container.querySelector('#timeline-slider');
-    dom.currentTime = container.querySelector('#current-time');
-    dom.totalDuration = container.querySelector('#total-duration');
-    dom.allControls = container.querySelectorAll('button, input');
-}
-
+/**
+ * Adiciona todos os listeners de eventos para os controles e para o player de áudio.
+ */
 function setupEventListeners() {
     dom.playPauseBtn.addEventListener('click', () => {
         audioPlayer.isPlaying() ? audioPlayer.pause() : audioPlayer.play();
@@ -51,10 +39,18 @@ function setupEventListeners() {
     dom.rewindBtn.addEventListener('click', () => audioPlayer.seek(audioPlayer.getCurrentTime() - 2));
     dom.forwardBtn.addEventListener('click', () => audioPlayer.seek(audioPlayer.getCurrentTime() + 2));
 
-    dom.timelineSlider.addEventListener('mousedown', () => isScrubbing = true);
-    document.addEventListener('mouseup', () => isScrubbing = false);
+    dom.timelineSlider.addEventListener('mousedown', () => { isScrubbing = true; });
+    document.addEventListener('mouseup', () => { isScrubbing = false; });
 
     dom.timelineSlider.addEventListener('input', () => {
+        const progress = dom.timelineSlider.value / 1000;
+        const targetTime = audioPlayer.getDuration() * progress;
+        // Atualiza o tempo visualmente ENQUANTO arrasta
+        dom.currentTime.textContent = audioPlayer.formatTime(targetTime);
+    });
+    
+    // Altera o tempo do áudio apenas QUANDO o usuário solta o mouse
+    dom.timelineSlider.addEventListener('change', () => {
         const progress = dom.timelineSlider.value / 1000;
         const targetTime = audioPlayer.getDuration() * progress;
         audioPlayer.seek(targetTime);
@@ -63,7 +59,7 @@ function setupEventListeners() {
     // --- Listeners para eventos do Player ---
     document.addEventListener('loaded', (e) => {
         dom.totalDuration.textContent = e.detail.formattedDuration;
-        dom.allControls.forEach(el => el.disabled = false);
+        dom.allControls.forEach(el => { el.disabled = false; });
     });
 
     document.addEventListener('statechange', (e) => {
@@ -72,14 +68,14 @@ function setupEventListeners() {
     });
     
     document.addEventListener('timeupdate', (e) => {
-        dom.currentTime.textContent = e.detail.formattedTime;
         if (!isScrubbing) {
-            dom.timelineSlider.value = (e.detail.progress / 100) * 1000;
+            dom.currentTime.textContent = e.detail.formattedTime;
+            dom.timelineSlider.value = e.detail.progress * 10;
         }
     });
 
     document.addEventListener('unloaded', () => {
-        dom.allControls.forEach(el => el.disabled = true);
+        dom.allControls.forEach(el => { el.disabled = true; });
         dom.timelineSlider.value = 0;
         dom.currentTime.textContent = '00:00.00';
         dom.totalDuration.textContent = '00:00.00';
@@ -92,11 +88,22 @@ export function initialize() {
     const container = document.getElementById('playback-panel');
     if (!container) {
         console.error("Container do painel de playback (#playback-panel) não foi encontrado no HTML.");
-        return; // Sai da função para evitar erros
+        return;
     }
 
-    render();
-    queryDOMElements();
+    render(container);
+
+    // Mapeia os elementos da UI recém-criados para o objeto dom.
+    dom.toStartBtn = container.querySelector('#to-start-btn');
+    dom.rewindBtn = container.querySelector('#rewind-btn');
+    dom.playPauseBtn = container.querySelector('#play-pause-btn');
+    dom.forwardBtn = container.querySelector('#forward-btn');
+    dom.toEndBtn = container.querySelector('#to-end-btn');
+    dom.timelineSlider = container.querySelector('#timeline-slider');
+    dom.currentTime = container.querySelector('#current-time');
+    dom.totalDuration = container.querySelector('#total-duration');
+    dom.allControls = container.querySelectorAll('button, input');
+    
     setupEventListeners();
-    dom.allControls.forEach(el => el.disabled = true);
+    dom.allControls.forEach(el => { el.disabled = true; });
 }

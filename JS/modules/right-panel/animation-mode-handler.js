@@ -1,4 +1,5 @@
 /* JS/modules/right-panel/animation-mode-handler.js */
+import { setAnimationMode } from '../character/character-state.js';
 
 export function initialize(timelineController) {
     const container = document.getElementById('animation-mode-module');
@@ -19,8 +20,7 @@ export function initialize(timelineController) {
         button.classList.add('active');
 
         const mode = button.dataset.mode;
-        // Dispara um evento global para que outros módulos (como o de fonemas) possam reagir
-        const event = new CustomEvent('animationModeChanged', { detail: { mode } });
-        document.dispatchEvent(event);
+        setAnimationMode(mode);
+        console.log(`Modo de animação alterado para: ${mode}`);
     });
 }
