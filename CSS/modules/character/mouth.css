@@ -1,0 +1,5 @@
+.mouth-container {
+    position: relative; margin-top: 20px; width: 320px;
+    transition: width 0.3s ease, margin-top 0.3s ease;
+}
+#mouth { width: 100%; height: auto; display: block; }
