@@ -90,12 +90,13 @@ const api = {
 
     /**
      * Define a expressão facial alterando a classe no container dos olhos.
-     * @param {string} expression - O nome da expressão (ex: 'happy', 'sad').
+     * @param {string} expression - O nome da expressão (ex: 'happy', 'sad', 'closed').
      */
     setExpression: (expression) => {
         if (dom.eyesContainer) {
             // Primeiro, remove todas as classes de expressão possíveis para evitar conflitos.
-            dom.eyesContainer.classList.remove('happy', 'sad', 'angry', 'curious', 'suspicious');
+            dom.eyesContainer.classList.remove('happy', 'sad', 'angry', 'curious', 'suspicious', 'closed');
+            
             // Adiciona a nova classe de expressão, se ela existir.
             if (expression) {
                 dom.eyesContainer.classList.add(expression);

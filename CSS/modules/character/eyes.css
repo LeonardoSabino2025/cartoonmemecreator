@@ -1,4 +1,4 @@
-/* CSS/modules/character/eyes.css - VERSÃO CORRIGIDA */
+/* CSS/modules/character/eyes.css - VERSÃO CORRIGIDA E FINAL */
 
 :root {
     --eye-size: 200px;
@@ -7,47 +7,41 @@
     --eye-highlight-size: 10px;
     --eyebrow-height: 20px;
     --eyebrow-width: 110px;
-    --black: #000000;
+    --black: #1a1a1a;
+    --cor-branco: #ffffff; /* Certifique-se de que --cor-branco esteja definido */
 }
 
 .eyes-container {
     display: flex;
-    gap: 20px;
     position: relative;
-    transition: gap 0.3s ease;
+    transition: none;
 }
 
-/* O .eye é um container de posicionamento */
+/* 1. ESTILO PADRÃO DO OLHO (MASCULINO) */
 .eye {
     width: var(--eye-size);
     height: calc(var(--eye-size) / 0.9);
     position: relative;
-}
-
-/* --- ESTADOS DE GÊNERO SEPARADOS E INDEPENDENTES --- */
-
-/* ESTADO MASCULINO (padrão) */
-.eye {
+    transition: margin 0.3s ease;
+    /* Estilos visuais do olho masculino */
     background-color: var(--cor-branco);
     border: 10px solid var(--black);
     border-radius: 50%;
 }
 
-.eye-outline {
-    display: none; /* SVG escondido por padrão */
-}
-
-/* ESTADO FEMININO - sobrescreve o padrão */
+/* 2. LÓGICA DE TROCA PARA FEMININO */
+/* Quando o container principal tem a classe .female... */
 .eyes-container.female .eye {
+    /* ...o fundo e a borda do olho padrão são removidos para dar lugar ao SVG. */
     border: none;
     background: transparent;
 }
-
 .eyes-container.female .eye-outline {
-    display: block; /* SVG visível no feminino */
+    /* ...e o container do SVG é exibido. */
+    display: block;
 }
 
-/* --- PARTES INTERNAS DO OLHO --- */
+/* 3. PARTES INTERNAS DO OLHO (ÍRIS, PUPILA, ETC) */
 .iris {
     position: absolute;
     width: var(--eye-iris-size);
@@ -82,27 +76,25 @@
     right: 15%;
 }
 
-/* --- CONTORNO SVG FEMININO --- */
+/* 4. CONTORNO SVG FEMININO ABERTO */
 .eye-outline {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    fill: var(--cor-branco);
     width: var(--eye-size);
     height: var(--eye-size);
-    z-index: 5; /* Abaixo da íris (z-index: 15) mas acima de outros elementos */
+    z-index: 10;
     pointer-events: none;
-    display: none; /* Por padrão escondido, só aparece no feminino */
+    display: none; /* Escondido por padrão */
 }
 
 .left-eye .eye-outline {
-    transform: translate(-50%, -50%) scaleX(-1) scale(1.20);
+    transform: translate(-50%, -50%) scaleX(-1) scale(1.15);
 }
 
-/* ALTERAÇÃO AQUI: Adicionado scale(1.20) para aumentar o desenho */
 .right-eye .eye-outline {
-    transform: translate(-50%, -50%) scale(1.20);
+    transform: translate(-50%, -50%) scale(1.15);
 }
 
 .eye-outline-svg {
@@ -110,7 +102,7 @@
     height: 105%;
 }
 
-/* --- SOBRANCELHAS E EXPRESSÕES --- */
+/* 5. SOBRANCELHAS E EXPRESSÕES */
 .eyebrow {
     position: absolute;
     height: var(--eyebrow-height);
@@ -134,3 +126,52 @@
 .curious .right-eye .eyebrow { transform: translateX(-50%) rotate(-5deg); width: 130px; }
 .suspicious .left-eye .eyebrow { transform: translateX(-50%) translateY(60px) rotate(15deg); width: 130px; }
 .suspicious .right-eye .eyebrow { transform: translateX(-55%) translateY(3px) rotate(0deg); width: 130px; }
+
+
+/* 6. LÓGICA PARA OLHOS FECHADOS */
+.eye-closed-container {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: none; /* Escondido por padrão */
+    justify-content: center;
+    align-items: center;
+    z-index: 5;
+}
+.eyes-container.closed .iris,
+.eyes-container.closed .eye-outline {
+    display: none; /* Esconde as partes do olho aberto */
+}
+.eyes-container.closed .eye {
+    background: transparent; /* Remove o fundo do olho masculino */
+    border: none; /* Remove a borda do olho masculino */
+}
+.eyes-container.closed .eye-closed-container {
+    display: flex; /* Exibe o container dos olhos fechados */
+}
+
+.closed-eye-m, .closed-eye-f {
+    width: 100%;
+    display: none; /* Ambos escondidos por padrão */
+}
+
+/* Mostra o SVG de olho fechado masculino quando ativo */
+.eyes-container.male.closed .closed-eye-m {
+    display: block;
+    /* Adiciona espelhamento para o olho esquerdo masculino fechado */
+    transform: scale(1); /* Padrão */
+}
+.eyes-container.male.closed .left-eye .closed-eye-m {
+    transform: scaleX(-1); /* Espelha o olho esquerdo masculino fechado */
+}
+
+
+/* Mostra o SVG de olho fechado feminino quando ativo */
+.eyes-container.female.closed .closed-eye-f {
+    display: block;
+    /* Garante que o SVG feminino fechado não tenha transformações padrão indesejadas */
+    transform: scale(1);
+}
+.eyes-container.female.closed .left-eye .closed-eye-f {
+    transform: scaleX(-1); /* CORREÇÃO: Espelha o olho esquerdo feminino fechado */
+}

@@ -10,20 +10,20 @@ import * as timelineController from './modules/timeline-controller.js';
 import { initialize as initializeRightPanel } from './modules/right-panel/right-panel-handler.js';
 
 function main() {
+    // 1. Inicializa a API do Personagem primeiro
     const characterAPI = initializeCharacterAPI();
 
-    // ORDEM DE INICIALIZAÇÃO CORRIGIDA:
-    // 1. Prepara a UI que vai OUVIR os eventos (playback-handler)
+    // 2. Prepara a UI que vai OUVIR os eventos (playback e painel direito)
     initializePlaybackHandler();
     initializeRightPanel(characterAPI, timelineController);
     
-    // 2. Prepara a UI que vai CAUSAR os eventos (audio-handler, etc)
+    // 3. Prepara a UI que vai CAUSAR os eventos (painel esquerdo)
     audioHandler.initialize();
     genderHandler.initialize(characterAPI);
     moodHandler.initialize(characterAPI);
     slidersHandler.initialize(characterAPI);
     
-    // Listener final para conectar o tempo à animação do personagem
+    // 4. Conecta o player à animação do personagem
     document.addEventListener('timeupdate', (e) => {
         const animationData = e.detail.animationData;
         if (!animationData) return;
