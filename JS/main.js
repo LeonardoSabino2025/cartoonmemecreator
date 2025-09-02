@@ -20,9 +20,6 @@ import { initialize as initializeGazeHud } from './modules/stage/gaze-hud-handle
 // Referência para o player de áudio
 import audioPlayer from './modules/playback-panel/audio-player.js';
 
-// Variável para controle de atualização do canvas
-let renderLoopId = null;
-
 function main() {
     const characterAPI = initializeCharacterAPI();
 
@@ -33,80 +30,6 @@ function main() {
     genderHandler.initialize(characterAPI);
     slidersHandler.initialize(characterAPI);
     initializeGazeHud(characterAPI, timelineController);
-
-    // === CRIAÇÃO DO INDICADOR DE GRAVAÇÃO ===
-    const recordingIndicator = document.createElement('div');
-    recordingIndicator.id = 'recording-indicator';
-    document.body.appendChild(recordingIndicator);
-
-    function showRecordingIndicator(show) {
-        recordingIndicator.style.display = show ? 'block' : 'none';
-    }
-
-    // === ATUALIZAÇÃO DO CANVAS EM TEMPO REAL (com espera) ===
-    async function updateCanvas() {
-        const canvas = document.getElementById('stage-canvas');
-        const characterContainer = document.getElementById('character-container');
-
-        if (!canvas || !characterContainer) {
-            console.warn("Canvas ou container não encontrado.");
-            return;
-        }
-
-        // Configura o contexto com willReadFrequently
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        ctx.imageSmoothingEnabled = false;
-
-        // Preenche com fundo verde (não transparente)
-        ctx.fillStyle = '#00ff00';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        try {
-            const rendered = await html2canvas(characterContainer, {
-                backgroundColor: null,
-                scale: 1,
-                useCORS: true,
-                allowTaint: true,
-                logging: false,
-                width: characterContainer.offsetWidth,
-                height: characterContainer.offsetHeight
-            });
-
-            ctx.drawImage(rendered, 0, 0);
-
-            // ✅ Depuração: desenha texto para confirmar que o canvas tem conteúdo
-            ctx.fillStyle = 'red';
-            ctx.font = '20px Arial';
-            ctx.fillText('GRAVANDO', 50, 50);
-
-        } catch (err) {
-            console.error("Erro ao renderizar com html2canvas:", err);
-        }
-    }
-
-    // === LOOP DE RENDERIZAÇÃO USANDO requestAnimationFrame ===
-    function startRenderLoop() {
-        updateCanvas();
-        renderLoopId = requestAnimationFrame(startRenderLoop);
-    }
-
-    function stopRenderLoop() {
-        if (renderLoopId) {
-            cancelAnimationFrame(renderLoopId);
-            renderLoopId = null;
-        }
-    }
-
-    // Controla o loop com base no estado do áudio
-    document.addEventListener('statechange', (e) => {
-        if (e.detail.isPlaying) {
-            if (!renderLoopId) startRenderLoop();
-        } else {
-            stopRenderLoop();
-        }
-    });
-
-    document.addEventListener('ended', stopRenderLoop);
 
     // === BOTÃO "RENDERIZAR VÍDEO" (Gravação de Tela) ===
     const renderBtn = document.getElementById('render-video-btn');
@@ -124,10 +47,11 @@ function main() {
             // Esconde os painéis
             hidePanels();
 
+            // Oculta temporariamente o canvas para evitar clones
             const canvas = document.getElementById('stage-canvas');
             if (canvas) canvas.style.display = 'none';
 
-            // Mostra uma mensagem no topo da tela
+            // Mostra uma mensagem clara para o usuário
             const message = document.createElement('div');
             message.id = 'recording-message';
             message.style.position = 'fixed';
@@ -136,30 +60,39 @@ function main() {
             message.style.transform = 'translateX(-50%)';
             message.style.backgroundColor = '#ff0000';
             message.style.color = 'white';
-            message.style.padding = '10px 20px';
+            message.style.padding = '12px 20px';
             message.style.borderRadius = '8px';
             message.style.zIndex = '9999';
-            message.style.fontSize = '1rem';
-            message.textContent = '⚠️ Clique em "Compartilhar" na aba do seu navegador para gravar a tela.';
+            message.style.fontSize = '2rem';
+            message.style.textAlign = 'center';
+            message.style.maxWidth = '80%';
+            message.innerHTML = `
+                ⚠️ Clique em "Compartilhar" na aba do seu navegador.<br>
+                <small>Deixe o cursor do mouse longe do rosto do personagem.</small>
+            `;
             document.body.appendChild(message);
 
-            // Remove a mensagem após 3 segundos
-            setTimeout(() => {
+            // Remove a mensagem após 4 segundos (ou quando a gravação começar)
+            const hideMessage = () => {
                 if (message && message.parentNode) {
                     message.parentNode.removeChild(message);
                 }
-            }, 3000);
+            };
+            setTimeout(hideMessage, 4000);
 
             try {
-                // Inicia a gravação da tela (isso pausa o script até o usuário escolher a aba)
+                // 1. Inicia a gravação da tela (espera o usuário escolher a aba)
                 const recorder = await startScreenRecording();
 
-                // Após a gravação começar, inicia o áudio
+                // Mensagem removida assim que a gravação começa
+                hideMessage();
+
+                // 2. Inicia o áudio somente após a gravação estar ativa
                 if (!audioPlayer.isPlaying()) {
                     audioPlayer.play();
                 }
 
-                showRecordingIndicator(true);
+                // Atualiza o botão
                 renderBtn.textContent = "🔴 Gravando...";
                 renderBtn.disabled = true;
 
@@ -171,21 +104,21 @@ function main() {
                     if (recorder && recorder.state !== 'inactive') {
                         stopScreenRecording();
                     }
-                    // Restaura os painéis
+
+                    // Restaura os painéis e o canvas
                     restorePanels(savedState);
                     if (canvas) canvas.style.display = 'block';
                     renderBtn.textContent = "Renderizar Vídeo";
                     renderBtn.disabled = false;
-                    showRecordingIndicator(false);
                 }, duration * 1000 + 1000); // +1s de margem
 
             } catch (err) {
                 // Em caso de erro, restaura os painéis
+                hideMessage();
                 restorePanels(savedState);
                 if (canvas) canvas.style.display = 'block';
                 renderBtn.textContent = "Renderizar Vídeo";
                 renderBtn.disabled = false;
-                showRecordingIndicator(false);
             }
         });
     }

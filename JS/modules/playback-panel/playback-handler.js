@@ -89,27 +89,6 @@ function setupEventListeners() {
         dom.playPauseBtn.title = e.detail.isPlaying ? 'Pause' : 'Play';
     });
     
-    // Listener que conecta o player de áudio com a API do personagem
-    document.addEventListener('timeupdate', (e) => {
-        const { animationData } = e.detail;
-        if (!animationData) return;
-
-        if (animationData.eyes) {
-            characterAPI.setExpression(animationData.eyes);
-        }
-
-        if (animationData.mouth) {
-            characterAPI.setMouth(animationData.mouth);
-        }
-
-        if (animationData.gaze) {
-            characterAPI.setGaze(animationData.gaze.x, animationData.gaze.y);
-        }
-
-        if (animationData.gender) {
-            characterAPI.setGender(animationData.gender);
-        }
-    });
 
     document.addEventListener('unloaded', () => {
         dom.allControls.forEach(el => { el.disabled = true; });
