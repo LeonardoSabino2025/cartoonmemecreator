@@ -146,6 +146,14 @@ body {
     display: none;
 }
 
+/* #character-container {
+    width: 400px;
+    height: 500px;
+    margin: 0 auto;
+    position: relative;
+    overflow: visible;
+} */
+
 @keyframes pulse {
     from {
         transform: scale(0.8);
@@ -946,9 +954,6 @@ import { initialize as initializeGazeHud } from './modules/stage/gaze-hud-handle
 // Referência para o player de áudio
 import audioPlayer from './modules/playback-panel/audio-player.js';
 
-// Variável para controle de atualização do canvas
-let renderLoopId = null;
-
 function main() {
     const characterAPI = initializeCharacterAPI();
 
@@ -960,152 +965,104 @@ function main() {
     slidersHandler.initialize(characterAPI);
     initializeGazeHud(characterAPI, timelineController);
 
-    // === ATUALIZAÇÃO DO CANVAS EM TEMPO REAL (com espera) ===
-    async function updateCanvas() {
-        const canvas = document.getElementById('stage-canvas');
-        const characterContainer = document.getElementById('character-container');
+    // === BOTÃO FLUTUANTE "GERAR VÍDEO" ===
+    const renderBtn = document.createElement('button');
+    renderBtn.id = 'render-video-btn';
+    renderBtn.innerHTML = '🎥';
+    renderBtn.title = 'Gerar Vídeo';
+    renderBtn.style.cssText = `
+        position: fixed;
+        bottom: 15px;
+        right: 360px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background-color: var(--cor-painel-fundo);
+        color: white;
+        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: none;
+    `;
 
-        if (!canvas || !characterContainer) {
-            console.warn("Canvas ou container não encontrado.");
-            return;
-        }
-
-        // Configura o contexto com willReadFrequently
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        ctx.imageSmoothingEnabled = false;
-
-        // Preenche com fundo verde (não transparente)
-        ctx.fillStyle = '#00ff00';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        try {
-            const rendered = await html2canvas(characterContainer, {
-                backgroundColor: null,
-                scale: 1,
-                useCORS: true,
-                allowTaint: true,
-                logging: false,
-                width: characterContainer.offsetWidth,
-                height: characterContainer.offsetHeight
-            });
-
-            ctx.drawImage(rendered, 0, 0);
-
-            // ✅ Depuração: desenha texto para confirmar que o canvas tem conteúdo
-            ctx.fillStyle = 'red';
-            ctx.font = '20px Arial';
-            ctx.fillText('GRAVANDO', 50, 50);
-
-        } catch (err) {
-            console.error("Erro ao renderizar com html2canvas:", err);
-        }
-    }
-
-    // === LOOP DE RENDERIZAÇÃO USANDO requestAnimationFrame ===
-    function startRenderLoop() {
-        updateCanvas();
-        renderLoopId = requestAnimationFrame(startRenderLoop);
-    }
-
-    function stopRenderLoop() {
-        if (renderLoopId) {
-            cancelAnimationFrame(renderLoopId);
-            renderLoopId = null;
-        }
-    }
-
-    // Controla o loop com base no estado do áudio
-    document.addEventListener('statechange', (e) => {
-        if (e.detail.isPlaying) {
-            if (!renderLoopId) startRenderLoop();
-        } else {
-            stopRenderLoop();
-        }
+    // Efeito de hover
+    renderBtn.addEventListener('mouseenter', () => {
+        renderBtn.style.transform = 'scale(1.1)';
+        renderBtn.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.3)';
     });
 
-    document.addEventListener('ended', stopRenderLoop);
+    renderBtn.addEventListener('mouseleave', () => {
+        renderBtn.style.transform = 'scale(1)';
+        renderBtn.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+    });
 
-    // === BOTÃO "RENDERIZAR VÍDEO" (Gravação de Tela) ===
-    const renderBtn = document.getElementById('render-video-btn');
-
-    if (renderBtn) {
-        renderBtn.addEventListener('click', async () => {
-            if (!audioPlayer.getAudioBuffer()) {
-                alert("⚠️ Carregue um áudio antes de renderizar.");
-                return;
-            }
-
-            // Salva o estado dos painéis
-            const savedState = savePanelVisibility();
-
-            // Esconde os painéis
-            hidePanels();
-
-            const canvas = document.getElementById('stage-canvas');
-            if (canvas) canvas.style.display = 'none';
-
-            // Mostra uma mensagem no topo da tela
-            const message = document.createElement('div');
-            message.id = 'recording-message';
-            message.style.position = 'fixed';
-            message.style.top = '50px';
-            message.style.left = '50%';
-            message.style.transform = 'translateX(-50%)';
-            message.style.backgroundColor = '#ff0000';
-            message.style.color = 'white';
-            message.style.padding = '10px 20px';
-            message.style.borderRadius = '8px';
-            message.style.zIndex = '9999';
-            message.style.fontSize = '1rem';
-            message.textContent = '⚠️ Clique em "Compartilhar" na aba do seu navegador para gravar a tela.';
-            document.body.appendChild(message);
-
-            // Remove a mensagem após 3 segundos
-            setTimeout(() => {
-                if (message && message.parentNode) {
-                    message.parentNode.removeChild(message);
-                }
-            }, 3000);
-
-            try {
-                // Inicia a gravação da tela (isso pausa o script até o usuário escolher a aba)
-                const recorder = await startScreenRecording();
-
-                // Após a gravação começar, inicia o áudio
-                if (!audioPlayer.isPlaying()) {
-                    audioPlayer.play();
-                }
-
-                showRecordingIndicator(true);
-                renderBtn.textContent = "🔴 Gravando...";
-                renderBtn.disabled = true;
-
-                // Calcula duração do áudio
-                const duration = audioPlayer.getDuration();
-
-                // Para a gravação após o fim do áudio
-                setTimeout(() => {
-                    if (recorder && recorder.state !== 'inactive') {
-                        stopScreenRecording();
-                    }
-                    // Restaura os painéis
-                    restorePanels(savedState);
-                    if (canvas) canvas.style.display = 'block';
-                    renderBtn.textContent = "Renderizar Vídeo";
-                    renderBtn.disabled = false;
-                    showRecordingIndicator(false);
-                }, duration * 1000 + 1000); // +1s de margem
-
-            } catch (err) {
-                // Em caso de erro, restaura os painéis
-                restorePanels(savedState);
-                if (canvas) canvas.style.display = 'block';
-                renderBtn.textContent = "Renderizar Vídeo";
-                renderBtn.disabled = false;
-                showRecordingIndicator(false);
-            }
-        });
+    // Evento de clique
+    renderBtn.addEventListener('click', async () => {
+    if (!audioPlayer.getAudioBuffer()) {
+        alert("⚠️ Carregue um áudio antes de gerar o vídeo.");
+        return;
     }
+
+    // Salva o estado dos painéis
+    const savedState = savePanelVisibility();
+
+    // Esconde os painéis
+    hidePanels();
+
+    // Declara o canvas aqui, fora do try
+    const canvas = document.getElementById('stage-canvas');
+
+    try {
+        // 1. Inicia a gravação da tela
+        const recorder = await startScreenRecording();
+
+        // 2. Esconde o cursor apenas dentro do palco
+        document.getElementById('stage').style.cursor = 'none';
+
+        // 3. Inicia o áudio após a gravação começar
+        if (!audioPlayer.isPlaying()) {
+            audioPlayer.play();
+        }
+
+        // Atualiza o botão
+        renderBtn.textContent = "🔴";
+        renderBtn.disabled = true;
+
+        // Calcula duração do áudio
+        const duration = audioPlayer.getDuration();
+
+        // Para a gravação após o fim do áudio
+        setTimeout(() => {
+            if (recorder && recorder.state !== 'inactive') {
+                stopScreenRecording();
+            }
+
+            // Restaura os painéis, o canvas e o cursor
+            restorePanels(savedState);
+            if (canvas) canvas.style.display = 'block';
+            document.getElementById('stage').style.cursor = 'default';
+
+            renderBtn.textContent = '🎥';
+            renderBtn.disabled = false;
+        }, duration * 1000 + 1000); // +1s de margem
+
+    } catch (err) {
+        // Em caso de erro, restaura tudo
+        restorePanels(savedState);
+        if (canvas) canvas.style.display = 'block';
+        document.getElementById('stage').style.cursor = 'default';
+        renderBtn.textContent = '🎥';
+        renderBtn.disabled = false;
+    }
+});
+
+    // Adiciona o botão ao corpo
+    document.body.appendChild(renderBtn);
 
     // Listener que conecta o player de áudio com a API do personagem
     document.addEventListener('timeupdate', (e) => {
@@ -1388,11 +1345,57 @@ export function savePanelVisibility() {
 /**
  * Esconde todos os painéis
  */
+// export function hidePanels() {
+//     panelsToHide.forEach(selector => {
+//         const el = document.querySelector(selector);
+//         if (el) el.style.display = 'none';
+//     });
+// }
+
 export function hidePanels() {
+    // Esconde apenas os painéis — NÃO o palco ou o character-container
+    const panelsToHide = [
+        '#left-panel',
+        '#right-panel',
+        '#playback-panel',
+        '#waveform-panel',
+        '.panel-title',
+        'button:not(#render-video-btn)',
+        '#gaze-hud-container',
+        '#audio-module',
+        '#expression-markers-list'
+    ];
+
     panelsToHide.forEach(selector => {
         const el = document.querySelector(selector);
-        if (el) el.style.display = 'none';
+        if (el) {
+            el.style.display = 'none';
+        }
     });
+
+    // Garante que o #stage e o #character-container estejam visíveis
+    const stage = document.getElementById('stage');
+    const characterContainer = document.getElementById('character-container');
+    const canvas = document.getElementById('stage-canvas');
+
+    if (stage) {
+        stage.style.display = 'block';
+        stage.style.visibility = 'visible';
+        stage.style.position = 'fixed'; // Evita colapsos
+        stage.style.top = '0';
+        stage.style.left = '0';
+    }
+
+    if (characterContainer) {
+        characterContainer.style.display = 'block';
+        characterContainer.style.visibility = 'visible';
+        characterContainer.style.position = 'relative';
+    }
+
+    if (canvas) {
+        canvas.style.display = 'block';
+        canvas.style.zIndex = '-1';
+    }
 }
 
 /**
@@ -1668,16 +1671,17 @@ container.innerHTML = `
   <h3>Áudio</h3>
   <div id="audio-controls">
     <input type="file" id="audio-file-input" accept="audio/*" style="display:none">
-    <label id="upload-audio-label" for="audio-file-input" class="btn">Carregar Áudio</label>
+    <label id="upload-audio-label" for="audio-file-input" class="btn" style="background-color: var(--cor-realce); color: white; margin-top: 10px;">Carregar Áudio</label>
     <button id="cancel-audio-btn" style="display:none;">Cancelar</button>    
-    <button id="render-video-btn" class="btn" style="background-color: var(--cor-realce); color: white; margin-top: 10px;">
-      Renderizar Vídeo
-    </button>
   </div>
   <div id="audio-info"></div>
   <div id="audio-status"></div>
 `;
 }
+
+    // <button id="render-video-btn" class="btn" style="background-color: var(--cor-realce); color: white; margin-top: 10px;">
+    //   Gerar Vídeo
+    // </button>
 
 /**
  * Lida com o processo de seleção e carregamento de um arquivo de áudio.
@@ -2144,27 +2148,6 @@ function setupEventListeners() {
         dom.playPauseBtn.title = e.detail.isPlaying ? 'Pause' : 'Play';
     });
     
-    // Listener que conecta o player de áudio com a API do personagem
-    document.addEventListener('timeupdate', (e) => {
-        const { animationData } = e.detail;
-        if (!animationData) return;
-
-        if (animationData.eyes) {
-            characterAPI.setExpression(animationData.eyes);
-        }
-
-        if (animationData.mouth) {
-            characterAPI.setMouth(animationData.mouth);
-        }
-
-        if (animationData.gaze) {
-            characterAPI.setGaze(animationData.gaze.x, animationData.gaze.y);
-        }
-
-        if (animationData.gender) {
-            characterAPI.setGender(animationData.gender);
-        }
-    });
 
     document.addEventListener('unloaded', () => {
         dom.allControls.forEach(el => { el.disabled = true; });
@@ -2923,6 +2906,14 @@ body {
     display: none;
 }
 
+/* #character-container {
+    width: 400px;
+    height: 500px;
+    margin: 0 auto;
+    position: relative;
+    overflow: visible;
+} */
+
 @keyframes pulse {
     from {
         transform: scale(0.8);
@@ -3636,9 +3627,6 @@ import { initialize as initializeGazeHud } from './modules/stage/gaze-hud-handle
 // Referência para o player de áudio
 import audioPlayer from './modules/playback-panel/audio-player.js';
 
-// Variável para controle de atualização do canvas
-let renderLoopId = null;
-
 function main() {
     const characterAPI = initializeCharacterAPI();
 
@@ -3650,152 +3638,104 @@ function main() {
     slidersHandler.initialize(characterAPI);
     initializeGazeHud(characterAPI, timelineController);
 
-    // === ATUALIZAÇÃO DO CANVAS EM TEMPO REAL (com espera) ===
-    async function updateCanvas() {
-        const canvas = document.getElementById('stage-canvas');
-        const characterContainer = document.getElementById('character-container');
+    // === BOTÃO FLUTUANTE "GERAR VÍDEO" ===
+    const renderBtn = document.createElement('button');
+    renderBtn.id = 'render-video-btn';
+    renderBtn.innerHTML = '🎥';
+    renderBtn.title = 'Gerar Vídeo';
+    renderBtn.style.cssText = `
+        position: fixed;
+        bottom: 15px;
+        right: 360px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background-color: var(--cor-painel-fundo);
+        color: white;
+        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: none;
+    `;
 
-        if (!canvas || !characterContainer) {
-            console.warn("Canvas ou container não encontrado.");
-            return;
-        }
-
-        // Configura o contexto com willReadFrequently
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        ctx.imageSmoothingEnabled = false;
-
-        // Preenche com fundo verde (não transparente)
-        ctx.fillStyle = '#00ff00';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        try {
-            const rendered = await html2canvas(characterContainer, {
-                backgroundColor: null,
-                scale: 1,
-                useCORS: true,
-                allowTaint: true,
-                logging: false,
-                width: characterContainer.offsetWidth,
-                height: characterContainer.offsetHeight
-            });
-
-            ctx.drawImage(rendered, 0, 0);
-
-            // ✅ Depuração: desenha texto para confirmar que o canvas tem conteúdo
-            ctx.fillStyle = 'red';
-            ctx.font = '20px Arial';
-            ctx.fillText('GRAVANDO', 50, 50);
-
-        } catch (err) {
-            console.error("Erro ao renderizar com html2canvas:", err);
-        }
-    }
-
-    // === LOOP DE RENDERIZAÇÃO USANDO requestAnimationFrame ===
-    function startRenderLoop() {
-        updateCanvas();
-        renderLoopId = requestAnimationFrame(startRenderLoop);
-    }
-
-    function stopRenderLoop() {
-        if (renderLoopId) {
-            cancelAnimationFrame(renderLoopId);
-            renderLoopId = null;
-        }
-    }
-
-    // Controla o loop com base no estado do áudio
-    document.addEventListener('statechange', (e) => {
-        if (e.detail.isPlaying) {
-            if (!renderLoopId) startRenderLoop();
-        } else {
-            stopRenderLoop();
-        }
+    // Efeito de hover
+    renderBtn.addEventListener('mouseenter', () => {
+        renderBtn.style.transform = 'scale(1.1)';
+        renderBtn.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.3)';
     });
 
-    document.addEventListener('ended', stopRenderLoop);
+    renderBtn.addEventListener('mouseleave', () => {
+        renderBtn.style.transform = 'scale(1)';
+        renderBtn.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+    });
 
-    // === BOTÃO "RENDERIZAR VÍDEO" (Gravação de Tela) ===
-    const renderBtn = document.getElementById('render-video-btn');
-
-    if (renderBtn) {
-        renderBtn.addEventListener('click', async () => {
-            if (!audioPlayer.getAudioBuffer()) {
-                alert("⚠️ Carregue um áudio antes de renderizar.");
-                return;
-            }
-
-            // Salva o estado dos painéis
-            const savedState = savePanelVisibility();
-
-            // Esconde os painéis
-            hidePanels();
-
-            const canvas = document.getElementById('stage-canvas');
-            if (canvas) canvas.style.display = 'none';
-
-            // Mostra uma mensagem no topo da tela
-            const message = document.createElement('div');
-            message.id = 'recording-message';
-            message.style.position = 'fixed';
-            message.style.top = '50px';
-            message.style.left = '50%';
-            message.style.transform = 'translateX(-50%)';
-            message.style.backgroundColor = '#ff0000';
-            message.style.color = 'white';
-            message.style.padding = '10px 20px';
-            message.style.borderRadius = '8px';
-            message.style.zIndex = '9999';
-            message.style.fontSize = '1rem';
-            message.textContent = '⚠️ Clique em "Compartilhar" na aba do seu navegador para gravar a tela.';
-            document.body.appendChild(message);
-
-            // Remove a mensagem após 3 segundos
-            setTimeout(() => {
-                if (message && message.parentNode) {
-                    message.parentNode.removeChild(message);
-                }
-            }, 3000);
-
-            try {
-                // Inicia a gravação da tela (isso pausa o script até o usuário escolher a aba)
-                const recorder = await startScreenRecording();
-
-                // Após a gravação começar, inicia o áudio
-                if (!audioPlayer.isPlaying()) {
-                    audioPlayer.play();
-                }
-
-                showRecordingIndicator(true);
-                renderBtn.textContent = "🔴 Gravando...";
-                renderBtn.disabled = true;
-
-                // Calcula duração do áudio
-                const duration = audioPlayer.getDuration();
-
-                // Para a gravação após o fim do áudio
-                setTimeout(() => {
-                    if (recorder && recorder.state !== 'inactive') {
-                        stopScreenRecording();
-                    }
-                    // Restaura os painéis
-                    restorePanels(savedState);
-                    if (canvas) canvas.style.display = 'block';
-                    renderBtn.textContent = "Renderizar Vídeo";
-                    renderBtn.disabled = false;
-                    showRecordingIndicator(false);
-                }, duration * 1000 + 1000); // +1s de margem
-
-            } catch (err) {
-                // Em caso de erro, restaura os painéis
-                restorePanels(savedState);
-                if (canvas) canvas.style.display = 'block';
-                renderBtn.textContent = "Renderizar Vídeo";
-                renderBtn.disabled = false;
-                showRecordingIndicator(false);
-            }
-        });
+    // Evento de clique
+    renderBtn.addEventListener('click', async () => {
+    if (!audioPlayer.getAudioBuffer()) {
+        alert("⚠️ Carregue um áudio antes de gerar o vídeo.");
+        return;
     }
+
+    // Salva o estado dos painéis
+    const savedState = savePanelVisibility();
+
+    // Esconde os painéis
+    hidePanels();
+
+    // Declara o canvas aqui, fora do try
+    const canvas = document.getElementById('stage-canvas');
+
+    try {
+        // 1. Inicia a gravação da tela
+        const recorder = await startScreenRecording();
+
+        // 2. Esconde o cursor apenas dentro do palco
+        document.getElementById('stage').style.cursor = 'none';
+
+        // 3. Inicia o áudio após a gravação começar
+        if (!audioPlayer.isPlaying()) {
+            audioPlayer.play();
+        }
+
+        // Atualiza o botão
+        renderBtn.textContent = "🔴";
+        renderBtn.disabled = true;
+
+        // Calcula duração do áudio
+        const duration = audioPlayer.getDuration();
+
+        // Para a gravação após o fim do áudio
+        setTimeout(() => {
+            if (recorder && recorder.state !== 'inactive') {
+                stopScreenRecording();
+            }
+
+            // Restaura os painéis, o canvas e o cursor
+            restorePanels(savedState);
+            if (canvas) canvas.style.display = 'block';
+            document.getElementById('stage').style.cursor = 'default';
+
+            renderBtn.textContent = '🎥';
+            renderBtn.disabled = false;
+        }, duration * 1000 + 1000); // +1s de margem
+
+    } catch (err) {
+        // Em caso de erro, restaura tudo
+        restorePanels(savedState);
+        if (canvas) canvas.style.display = 'block';
+        document.getElementById('stage').style.cursor = 'default';
+        renderBtn.textContent = '🎥';
+        renderBtn.disabled = false;
+    }
+});
+
+    // Adiciona o botão ao corpo
+    document.body.appendChild(renderBtn);
 
     // Listener que conecta o player de áudio com a API do personagem
     document.addEventListener('timeupdate', (e) => {
@@ -4078,11 +4018,57 @@ export function savePanelVisibility() {
 /**
  * Esconde todos os painéis
  */
+// export function hidePanels() {
+//     panelsToHide.forEach(selector => {
+//         const el = document.querySelector(selector);
+//         if (el) el.style.display = 'none';
+//     });
+// }
+
 export function hidePanels() {
+    // Esconde apenas os painéis — NÃO o palco ou o character-container
+    const panelsToHide = [
+        '#left-panel',
+        '#right-panel',
+        '#playback-panel',
+        '#waveform-panel',
+        '.panel-title',
+        'button:not(#render-video-btn)',
+        '#gaze-hud-container',
+        '#audio-module',
+        '#expression-markers-list'
+    ];
+
     panelsToHide.forEach(selector => {
         const el = document.querySelector(selector);
-        if (el) el.style.display = 'none';
+        if (el) {
+            el.style.display = 'none';
+        }
     });
+
+    // Garante que o #stage e o #character-container estejam visíveis
+    const stage = document.getElementById('stage');
+    const characterContainer = document.getElementById('character-container');
+    const canvas = document.getElementById('stage-canvas');
+
+    if (stage) {
+        stage.style.display = 'block';
+        stage.style.visibility = 'visible';
+        stage.style.position = 'fixed'; // Evita colapsos
+        stage.style.top = '0';
+        stage.style.left = '0';
+    }
+
+    if (characterContainer) {
+        characterContainer.style.display = 'block';
+        characterContainer.style.visibility = 'visible';
+        characterContainer.style.position = 'relative';
+    }
+
+    if (canvas) {
+        canvas.style.display = 'block';
+        canvas.style.zIndex = '-1';
+    }
 }
 
 /**
@@ -4358,16 +4344,17 @@ container.innerHTML = `
   <h3>Áudio</h3>
   <div id="audio-controls">
     <input type="file" id="audio-file-input" accept="audio/*" style="display:none">
-    <label id="upload-audio-label" for="audio-file-input" class="btn">Carregar Áudio</label>
+    <label id="upload-audio-label" for="audio-file-input" class="btn" style="background-color: var(--cor-realce); color: white; margin-top: 10px;">Carregar Áudio</label>
     <button id="cancel-audio-btn" style="display:none;">Cancelar</button>    
-    <button id="render-video-btn" class="btn" style="background-color: var(--cor-realce); color: white; margin-top: 10px;">
-      Renderizar Vídeo
-    </button>
   </div>
   <div id="audio-info"></div>
   <div id="audio-status"></div>
 `;
 }
+
+    // <button id="render-video-btn" class="btn" style="background-color: var(--cor-realce); color: white; margin-top: 10px;">
+    //   Gerar Vídeo
+    // </button>
 
 /**
  * Lida com o processo de seleção e carregamento de um arquivo de áudio.
@@ -4834,27 +4821,6 @@ function setupEventListeners() {
         dom.playPauseBtn.title = e.detail.isPlaying ? 'Pause' : 'Play';
     });
     
-    // Listener que conecta o player de áudio com a API do personagem
-    document.addEventListener('timeupdate', (e) => {
-        const { animationData } = e.detail;
-        if (!animationData) return;
-
-        if (animationData.eyes) {
-            characterAPI.setExpression(animationData.eyes);
-        }
-
-        if (animationData.mouth) {
-            characterAPI.setMouth(animationData.mouth);
-        }
-
-        if (animationData.gaze) {
-            characterAPI.setGaze(animationData.gaze.x, animationData.gaze.y);
-        }
-
-        if (animationData.gender) {
-            characterAPI.setGender(animationData.gender);
-        }
-    });
 
     document.addEventListener('unloaded', () => {
         dom.allControls.forEach(el => { el.disabled = true; });

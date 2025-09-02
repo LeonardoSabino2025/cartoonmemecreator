@@ -34,11 +34,57 @@ export function savePanelVisibility() {
 /**
  * Esconde todos os painéis
  */
+// export function hidePanels() {
+//     panelsToHide.forEach(selector => {
+//         const el = document.querySelector(selector);
+//         if (el) el.style.display = 'none';
+//     });
+// }
+
 export function hidePanels() {
+    // Esconde apenas os painéis — NÃO o palco ou o character-container
+    const panelsToHide = [
+        '#left-panel',
+        '#right-panel',
+        '#playback-panel',
+        '#waveform-panel',
+        '.panel-title',
+        'button:not(#render-video-btn)',
+        '#gaze-hud-container',
+        '#audio-module',
+        '#expression-markers-list'
+    ];
+
     panelsToHide.forEach(selector => {
         const el = document.querySelector(selector);
-        if (el) el.style.display = 'none';
+        if (el) {
+            el.style.display = 'none';
+        }
     });
+
+    // Garante que o #stage e o #character-container estejam visíveis
+    const stage = document.getElementById('stage');
+    const characterContainer = document.getElementById('character-container');
+    const canvas = document.getElementById('stage-canvas');
+
+    if (stage) {
+        stage.style.display = 'block';
+        stage.style.visibility = 'visible';
+        stage.style.position = 'fixed'; // Evita colapsos
+        stage.style.top = '0';
+        stage.style.left = '0';
+    }
+
+    if (characterContainer) {
+        characterContainer.style.display = 'block';
+        characterContainer.style.visibility = 'visible';
+        characterContainer.style.position = 'relative';
+    }
+
+    if (canvas) {
+        canvas.style.display = 'block';
+        canvas.style.zIndex = '-1';
+    }
 }
 
 /**

@@ -11,16 +11,17 @@ container.innerHTML = `
   <h3>Áudio</h3>
   <div id="audio-controls">
     <input type="file" id="audio-file-input" accept="audio/*" style="display:none">
-    <label id="upload-audio-label" for="audio-file-input" class="btn">Carregar Áudio</label>
+    <label id="upload-audio-label" for="audio-file-input" class="btn" style="background-color: var(--cor-realce); color: white; margin-top: 10px;">Carregar Áudio</label>
     <button id="cancel-audio-btn" style="display:none;">Cancelar</button>    
-    <button id="render-video-btn" class="btn" style="background-color: var(--cor-realce); color: white; margin-top: 10px;">
-      Renderizar Vídeo
-    </button>
   </div>
   <div id="audio-info"></div>
   <div id="audio-status"></div>
 `;
 }
+
+    // <button id="render-video-btn" class="btn" style="background-color: var(--cor-realce); color: white; margin-top: 10px;">
+    //   Gerar Vídeo
+    // </button>
 
 /**
  * Lida com o processo de seleção e carregamento de um arquivo de áudio.

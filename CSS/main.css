@@ -145,6 +145,14 @@ body {
     display: none;
 }
 
+/* #character-container {
+    width: 400px;
+    height: 500px;
+    margin: 0 auto;
+    position: relative;
+    overflow: visible;
+} */
+
 @keyframes pulse {
     from {
         transform: scale(0.8);

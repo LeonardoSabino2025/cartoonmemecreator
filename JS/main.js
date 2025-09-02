@@ -31,97 +31,104 @@ function main() {
     slidersHandler.initialize(characterAPI);
     initializeGazeHud(characterAPI, timelineController);
 
-    // === BOTÃO "RENDERIZAR VÍDEO" (Gravação de Tela) ===
-    const renderBtn = document.getElementById('render-video-btn');
+    // === BOTÃO FLUTUANTE "GERAR VÍDEO" ===
+    const renderBtn = document.createElement('button');
+    renderBtn.id = 'render-video-btn';
+    renderBtn.innerHTML = '🎥';
+    renderBtn.title = 'Gerar Vídeo';
+    renderBtn.style.cssText = `
+        position: fixed;
+        bottom: 15px;
+        right: 360px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background-color: var(--cor-painel-fundo);
+        color: white;
+        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: none;
+    `;
 
-    if (renderBtn) {
-        renderBtn.addEventListener('click', async () => {
-            if (!audioPlayer.getAudioBuffer()) {
-                alert("⚠️ Carregue um áudio antes de renderizar.");
-                return;
-            }
+    // Efeito de hover
+    renderBtn.addEventListener('mouseenter', () => {
+        renderBtn.style.transform = 'scale(1.1)';
+        renderBtn.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.3)';
+    });
 
-            // Salva o estado dos painéis
-            const savedState = savePanelVisibility();
+    renderBtn.addEventListener('mouseleave', () => {
+        renderBtn.style.transform = 'scale(1)';
+        renderBtn.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+    });
 
-            // Esconde os painéis
-            hidePanels();
-
-            // Oculta temporariamente o canvas para evitar clones
-            const canvas = document.getElementById('stage-canvas');
-            if (canvas) canvas.style.display = 'none';
-
-            // Mostra uma mensagem clara para o usuário
-            const message = document.createElement('div');
-            message.id = 'recording-message';
-            message.style.position = 'fixed';
-            message.style.top = '50px';
-            message.style.left = '50%';
-            message.style.transform = 'translateX(-50%)';
-            message.style.backgroundColor = '#ff0000';
-            message.style.color = 'white';
-            message.style.padding = '12px 20px';
-            message.style.borderRadius = '8px';
-            message.style.zIndex = '9999';
-            message.style.fontSize = '2rem';
-            message.style.textAlign = 'center';
-            message.style.maxWidth = '80%';
-            message.innerHTML = `
-                ⚠️ Clique em "Compartilhar" na aba do seu navegador.<br>
-                <small>Deixe o cursor do mouse longe do rosto do personagem.</small>
-            `;
-            document.body.appendChild(message);
-
-            // Remove a mensagem após 4 segundos (ou quando a gravação começar)
-            const hideMessage = () => {
-                if (message && message.parentNode) {
-                    message.parentNode.removeChild(message);
-                }
-            };
-            setTimeout(hideMessage, 4000);
-
-            try {
-                // 1. Inicia a gravação da tela (espera o usuário escolher a aba)
-                const recorder = await startScreenRecording();
-
-                // Mensagem removida assim que a gravação começa
-                hideMessage();
-
-                // 2. Inicia o áudio somente após a gravação estar ativa
-                if (!audioPlayer.isPlaying()) {
-                    audioPlayer.play();
-                }
-
-                // Atualiza o botão
-                renderBtn.textContent = "🔴 Gravando...";
-                renderBtn.disabled = true;
-
-                // Calcula duração do áudio
-                const duration = audioPlayer.getDuration();
-
-                // Para a gravação após o fim do áudio
-                setTimeout(() => {
-                    if (recorder && recorder.state !== 'inactive') {
-                        stopScreenRecording();
-                    }
-
-                    // Restaura os painéis e o canvas
-                    restorePanels(savedState);
-                    if (canvas) canvas.style.display = 'block';
-                    renderBtn.textContent = "Renderizar Vídeo";
-                    renderBtn.disabled = false;
-                }, duration * 1000 + 1000); // +1s de margem
-
-            } catch (err) {
-                // Em caso de erro, restaura os painéis
-                hideMessage();
-                restorePanels(savedState);
-                if (canvas) canvas.style.display = 'block';
-                renderBtn.textContent = "Renderizar Vídeo";
-                renderBtn.disabled = false;
-            }
-        });
+    // Evento de clique
+    renderBtn.addEventListener('click', async () => {
+    if (!audioPlayer.getAudioBuffer()) {
+        alert("⚠️ Carregue um áudio antes de gerar o vídeo.");
+        return;
     }
+
+    // Salva o estado dos painéis
+    const savedState = savePanelVisibility();
+
+    // Esconde os painéis
+    hidePanels();
+
+    // Declara o canvas aqui, fora do try
+    const canvas = document.getElementById('stage-canvas');
+
+    try {
+        // 1. Inicia a gravação da tela
+        const recorder = await startScreenRecording();
+
+        // 2. Esconde o cursor apenas dentro do palco
+        document.getElementById('stage').style.cursor = 'none';
+
+        // 3. Inicia o áudio após a gravação começar
+        if (!audioPlayer.isPlaying()) {
+            audioPlayer.play();
+        }
+
+        // Atualiza o botão
+        renderBtn.textContent = "🔴";
+        renderBtn.disabled = true;
+
+        // Calcula duração do áudio
+        const duration = audioPlayer.getDuration();
+
+        // Para a gravação após o fim do áudio
+        setTimeout(() => {
+            if (recorder && recorder.state !== 'inactive') {
+                stopScreenRecording();
+            }
+
+            // Restaura os painéis, o canvas e o cursor
+            restorePanels(savedState);
+            if (canvas) canvas.style.display = 'block';
+            document.getElementById('stage').style.cursor = 'default';
+
+            renderBtn.textContent = '🎥';
+            renderBtn.disabled = false;
+        }, duration * 1000 + 1000); // +1s de margem
+
+    } catch (err) {
+        // Em caso de erro, restaura tudo
+        restorePanels(savedState);
+        if (canvas) canvas.style.display = 'block';
+        document.getElementById('stage').style.cursor = 'default';
+        renderBtn.textContent = '🎥';
+        renderBtn.disabled = false;
+    }
+});
+
+    // Adiciona o botão ao corpo
+    document.body.appendChild(renderBtn);
 
     // Listener que conecta o player de áudio com a API do personagem
     document.addEventListener('timeupdate', (e) => {
