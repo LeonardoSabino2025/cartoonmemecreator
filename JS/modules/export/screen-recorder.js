@@ -60,7 +60,8 @@ export async function startScreenRecording() {
         // 1. Pede ao usuário para compartilhar a tela
         const displayStream = await navigator.mediaDevices.getDisplayMedia({
             video: true,
-            audio: false
+            audio: false,
+            preferCurrentTab: true // ✅ Tenta gravar apenas a aba atual
         });
 
         // 2. Captura o áudio do projeto
