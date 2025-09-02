@@ -1,0 +1,83 @@
+/* CSS/modules/right-panel/animation-panel.css */
+
+/* Estilos para o container de botões de fonema */
+.phoneme-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+    gap: 8px;
+}
+
+.phoneme-button {
+    padding: 8px;
+    font-size: 0.8rem;
+    background-color: var(--cor-branco);
+    border: 1px solid var(--cor-borda);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.phoneme-button:hover {
+    background-color: #e9ecef;
+}
+
+/* Estilos para a lista de marcadores (keyframes) */
+.timeline-markers-list {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0 0 0;
+    max-height: 120px;
+    overflow-y: auto;
+    background-color: #e9ecef;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+
+.timeline-markers-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.timeline-markers-list li:last-child {
+    border-bottom: none;
+}
+
+.marker-time {
+    font-weight: 600;
+    color: var(--cor-realce);
+    flex-shrink: 0;
+    margin-right: 10px;
+}
+
+.marker-value {
+    flex-grow: 1;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--cor-texto-secundario);
+}
+
+.marker-delete-btn {
+    background: var(--cor-perigo);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    line-height: 18px; /* Ajuste para centralizar o 'X' */
+    text-align: center;
+    flex-shrink: 0;
+    margin-left: 10px;
+    transition: background-color 0.2s;
+}
+
+.marker-delete-btn:hover {
+    background-color: var(--cor-perigo-hover);
+}

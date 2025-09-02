@@ -1,0 +1,130 @@
+/* CSS/modules/playback-panel/playback.css */
+
+#playback-panel {
+    bottom: 15px;
+    height: auto; /* Altura se ajusta ao conteúdo */
+    max-height: none;
+    width: 80%;
+    max-width: 900px;
+    padding: 8px 15px;
+    flex-direction: row;
+    align-items: center;
+    gap: 15px;
+    backdrop-filter: blur(5px);
+    background-color: rgba(240, 242, 245, 0.85); /* Fundo com transparência */
+}
+
+.playback-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.playback-controls button {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: var(--cor-texto-secundario);
+    padding: 5px;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.playback-controls button:hover:not(:disabled) {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+.playback-controls button:disabled {
+    color: #bbb;
+    cursor: not-allowed;
+}
+
+#play-pause-btn {
+    font-size: 1.5rem;
+    color: var(--cor-realce);
+}
+
+.timeline-wrapper {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.timeline-container {
+    flex-grow: 1;
+    position: relative;
+}
+
+#timeline-markers-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Impede que os marcadores interfiram no clique do slider */
+}
+
+.timeline-marker {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 6px;
+    height: 6px;
+    background-color: #1a1a1a;
+    border-radius: 50%;
+}
+
+#timeline-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    background: var(--cor-borda);
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+}
+
+#timeline-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: var(--cor-realce);
+    border-radius: 50%;
+    margin-top: -5px;
+}
+
+#timeline-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: var(--cor-realce);
+    border-radius: 50%;
+    border: none;
+}
+
+#timeline-slider:disabled {
+    cursor: not-allowed;
+}
+#timeline-slider:disabled::-webkit-slider-thumb {
+    background: #ccc;
+}
+#timeline-slider:disabled::-moz-range-thumb {
+    background: #ccc;
+}
+
+
+.time-display {
+    font-family: monospace;
+    font-size: 0.9rem;
+    color: var(--cor-texto-secundario);
+    min-width: 120px;
+    text-align: center;
+}

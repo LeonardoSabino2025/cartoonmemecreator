@@ -1,0 +1,46 @@
+/* CSS/modules/playback-panel/waveform.css */
+
+#waveform-panel {
+    position: absolute;
+    bottom: 95px; /* Posição acima do playback-panel (70px de altura + 25px de espaço) */
+    left: 50%;
+    transform: translateX(-50%);
+width: calc(90vw - (var(--painel-lateral-largura) + var(--painel-lateral-espaco)) * 2);
+    height: 70px; /* Altura fixa para o visualizador */
+    padding: 10px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(220, 222, 225, 0.85); /* Fundo ligeiramente diferente para contraste */
+}
+
+#waveform-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: flex-end; /* Alinha as barras na base */
+    justify-content: space-between;
+    gap: 2px; /* Espaço entre as barras */
+}
+
+.waveform-bar {
+    flex-grow: 1;
+    background-color: var(--cor-realce); /* Cor azul dos botões, como solicitado */
+    width: 2px; /* Largura base, vai se ajustar com flex-grow */
+    border-radius: 2px;
+}
+
+#waveform-progress-needle {
+    position: absolute;
+    left: 0; /* Começa na posição 0 */
+    top: 0;
+    width: 2px;
+    height: 100%;
+    background-color: var(--cor-perigo); /* Cor vermelha para destaque */
+    z-index: 10;
+    pointer-events: none; /* Impede que a agulha intercepte cliques */
+    transition: left 0.05s linear; /* Animação suave */
+    box-shadow: 0 0 5px var(--cor-perigo);
+    display: none; /* Começa escondida */
+}

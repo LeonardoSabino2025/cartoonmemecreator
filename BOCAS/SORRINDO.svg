@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 1182.9 516.8">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #b4000a;
+      }
+
+      .cls-1, .cls-2, .cls-3 {
+        stroke-width: 16px;
+      }
+
+      .cls-1, .cls-2, .cls-3, .cls-4 {
+        stroke: #000;
+      }
+
+      .cls-1, .cls-2, .cls-4 {
+        stroke-linecap: square;
+        stroke-linejoin: bevel;
+      }
+
+      .cls-2, .cls-4 {
+        fill: #fff;
+      }
+
+      .cls-3 {
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .cls-4 {
+        stroke-width: 10px;
+      }
+    </style>
+  </defs>
+  <!-- Generator: Adobe Illustrator 28.7.1, SVG Export Plug-In . SVG Version: 1.2.0 Build 142)  -->
+  <g>
+    <g id="Camada_1">
+      <g id="Camada_1-2" data-name="Camada_1">
+        <g id="Camada_1-2">
+          <path class="cls-1" d="M276.7,335.5c-63.1-103.3,20-194.9,83.7-222.3,63.6-27.4,86.6,35.4,155.4,43.3,68.8,7.9,199.1-52.9,289.2-70.2,90.2-17.4,92.9,28.8,115.6,60.5s18.2,117.5-47.9,184.3c-66.1,66.7-174.5,52-364.3,52.8-189.9.8-231.8-48.4-231.8-48.4h0Z"/>
+          <path class="cls-2" d="M315.7,264s-21.9,36.1-33.4,70.9c.9,1.6-1-1.6,0,0h0s46.2,91.7,236,90.9c189.9-.8,294-28.7,360.1-95.4s70.7-200.5,48.1-232.2c-22.7-31.7-115.8-12.5-115.8-12.5-90.2,17.4-220.5,78.1-289.2,70.2-68.8-7.9-91.7-70.8-155.4-43.3,0,0-84.4,115.8-50.3,151.4h-.1Z"/>
+          <path class="cls-4" d="M315.7,264s445.1,115.8,609.2-162.1"/>
+        </g>
+        <path class="cls-3" d="M933.1,35s55.9,15,51.9,59"/>
+      </g>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,43 @@
+/* CSS/modules/stage/gaze-hud.css */
+
+#gaze-hud {
+    --hud-color-1: #007bff; /* Azul vibrante */
+    --hud-color-2: #034133; /* Verde (evitará o verde de fundo principal) */
+    --hud-color-3: #ffc107; /* Amarelo */
+    --hud-color-4: #dc3545; /* Vermelho */
+    --hud-color-5: #6f42c1; /* Roxo */
+
+    
+    width: 30px;
+    height: 30px;
+    background-color: var(--hud-color-1);
+    border: 2px solid white;
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    cursor: grab;
+    z-index: 2000;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    transition: transform 0.2s ease-out;
+    animation: neon-pulse 10s infinite;
+}
+
+#gaze-hud:active {
+    cursor: grabbing;
+    transform: translate(-50%, -50%) scale(1.2);
+}
+
+@keyframes neon-pulse {
+    0%   { background-color: var(--hud-color-1); box-shadow: 0 0 15px var(--hud-color-1), 0 0 25px var(--hud-color-1); }
+    20%  { background-color: var(--hud-color-2); box-shadow: 0 0 15px var(--hud-color-2), 0 0 25px var(--hud-color-2); }
+    40%  { background-color: var(--hud-color-3); box-shadow: 0 0 15px var(--hud-color-3), 0 0 25px var(--hud-color-3); }
+    60%  { background-color: var(--hud-color-4); box-shadow: 0 0 15px var(--hud-color-4), 0 0 25px var(--hud-color-4); }
+    80%  { background-color: var(--hud-color-5); box-shadow: 0 0 15px var(--hud-color-5), 0 0 25px var(--hud-color-5); }
+    100% { background-color: var(--hud-color-1); box-shadow: 0 0 15px var(--hud-color-1), 0 0 25px var(--hud-color-1); }
+}
+
+.html2canvas-ignore {
+    display: none !important;
+}

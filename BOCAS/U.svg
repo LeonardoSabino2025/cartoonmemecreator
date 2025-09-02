@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 1217.4 784.4">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #6a000e;
+      }
+
+      .cls-1, .cls-2, .cls-3 {
+        stroke: #000;
+        stroke-linecap: square;
+        stroke-linejoin: bevel;
+        stroke-width: 10px;
+      }
+
+      .cls-2 {
+        fill: none;
+      }
+
+      .cls-3 {
+        fill: #ff0007;
+      }
+    </style>
+  </defs>
+  <!-- Generator: Adobe Illustrator 28.7.1, SVG Export Plug-In . SVG Version: 1.2.0 Build 142)  -->
+  <g>
+    <g id="Camada_1">
+      <g id="Camada_2">
+        <path class="cls-1" d="M343,429.5s169.6-153.2,182.9-166,108-71.7,163.8-9.3c55.8,62.4,162.5,165.6,171.3,166.5,0,0-112.5,50.5-128,79.3s-118.2,106.3-222.5,24.4c-104.3-81.9-129.5-116-167.6-94.7Z"/>
+        <path class="cls-3" d="M465.2,484s-12.4-16.4,11.1-22.6,124.1,19.2,114.3-56.8,23-156.6,84.5-115.8c61.5,40.7,104,138.6,104,174.2,0,0-42.5,27.4-53.9,47.6-21.3,38-156.4,98.7-260-26.6Z"/>
+      </g>
+      <path class="cls-2" d="M413,553s132,126,353,12"/>
+    </g>
+  </g>
+</svg>
