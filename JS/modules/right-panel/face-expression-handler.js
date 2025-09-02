@@ -49,6 +49,11 @@ function mapSensitivityValueToLabel(value) {
 
 export function initialize(characterAPI) {
     const container = document.getElementById('right-panel');
+    if (!container) {
+        console.error("Container '#right-panel' não encontrado.");
+        return;
+    }
+
     render(container);
 
     const expressionButtons = container.querySelector('#expression-buttons');
@@ -58,6 +63,12 @@ export function initialize(characterAPI) {
     const sensitivitySlider = container.querySelector('#sensitivity-slider');
     const sensitivityValue = container.querySelector('#sensitivity-value');
 
+    if (!expressionButtons || !markersList || !modeToggle || !sensitivitySlider || !sensitivityValue) {
+        console.error("Um ou mais elementos do painel direito não foram encontrados.");
+        return;
+    }
+
+    // === EVENTO: Adicionar expressão ===
     expressionButtons.addEventListener('click', e => {
         const button = e.target.closest('button');
         if (!button) return;
@@ -67,6 +78,7 @@ export function initialize(characterAPI) {
         characterAPI.setFaceExpression(key);
     });
 
+    // === EVENTO: Alternar modo de animação ===
     modeToggle.addEventListener('click', e => {
         const button = e.target.closest('button');
         if (!button) return;
@@ -77,21 +89,43 @@ export function initialize(characterAPI) {
         sensitivityContainer.classList.toggle('disabled', mode === 'manual');
     });
     
+    // === EVENTO: Ajustar sensibilidade ===
     sensitivitySlider.addEventListener('input', e => {
         const value = e.target.value;
         setSensitivity(value);
         sensitivityValue.textContent = mapSensitivityValueToLabel(value);
     });
 
+    // === EVENTO: Atualizar marcadores de expressão ===
     document.addEventListener('timelineUpdated', e => {
         if (e.detail.type === 'faceExpression') {
+            // Usa o timeline do evento ou fallback para o controller
+            const timeline = e.detail.timeline || timelineController.getTimeline('faceExpression');
+
+            if (!timeline || !Array.isArray(timeline)) {
+                console.warn("Timeline de faceExpression inválida ou não inicializada.");
+                markersList.innerHTML = '';
+                return;
+            }
+
             markersList.innerHTML = '';
-            e.detail.timeline.forEach(marker => {
+            timeline.forEach(marker => {
                 const preset = expressionPresets[marker.value];
                 const li = document.createElement('li');
-                li.innerHTML = `<span class="marker-time">${marker.time.toFixed(2)}s</span> <span class="marker-value">${preset.label}</span>`;
+                li.innerHTML = `<span class="marker-time">${marker.time.toFixed(2)}s</span> <span class="marker-value">${preset?.label || marker.value}</span>`;
                 markersList.appendChild(li);
             });
         }
     });
+
+    // === Inicialização inicial dos marcadores ===
+    const initialTimeline = timelineController.getTimeline('faceExpression');
+    if (Array.isArray(initialTimeline)) {
+        initialTimeline.forEach(marker => {
+            const preset = expressionPresets[marker.value];
+            const li = document.createElement('li');
+            li.innerHTML = `<span class="marker-time">${marker.time.toFixed(2)}s</span> <span class="marker-value">${preset?.label || marker.value}</span>`;
+            markersList.appendChild(li);
+        });
+    }
 }

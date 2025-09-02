@@ -1,4 +1,5 @@
 /* JS/modules/playback-panel/playback-handler.js */
+
 import audioPlayer from './audio-player.js';
 import * as timelineController from '../timeline-controller.js';
 
@@ -49,7 +50,6 @@ function updateTimelineMarkers() {
     });
 }
 
-
 /**
  * Adiciona todos os listeners de eventos para os controles e para o player de áudio.
  */
@@ -81,7 +81,6 @@ function setupEventListeners() {
     document.addEventListener('loaded', (e) => {
         dom.totalDuration.textContent = e.detail.formattedDuration;
         dom.allControls.forEach(el => { el.disabled = false; });
-        // CORREÇÃO: Chama a função para desenhar os marcadores quando o áudio é carregado
         updateTimelineMarkers();
     });
 
@@ -90,10 +89,25 @@ function setupEventListeners() {
         dom.playPauseBtn.title = e.detail.isPlaying ? 'Pause' : 'Play';
     });
     
+    // Listener que conecta o player de áudio com a API do personagem
     document.addEventListener('timeupdate', (e) => {
-        if (!isScrubbing) {
-            dom.currentTime.textContent = e.detail.formattedTime;
-            dom.timelineSlider.value = e.detail.progress * 10;
+        const { animationData } = e.detail;
+        if (!animationData) return;
+
+        if (animationData.eyes) {
+            characterAPI.setExpression(animationData.eyes);
+        }
+
+        if (animationData.mouth) {
+            characterAPI.setMouth(animationData.mouth);
+        }
+
+        if (animationData.gaze) {
+            characterAPI.setGaze(animationData.gaze.x, animationData.gaze.y);
+        }
+
+        if (animationData.gender) {
+            characterAPI.setGender(animationData.gender);
         }
     });
 
@@ -104,15 +118,13 @@ function setupEventListeners() {
         dom.totalDuration.textContent = '00:00.00';
         dom.playPauseBtn.textContent = '▶️';
         dom.playPauseBtn.title = 'Play';
-        // CORREÇÃO: Limpa os marcadores quando o áudio é removido
         updateTimelineMarkers();
     });
 
-    // CORREÇÃO: Adiciona o listener para atualizar os marcadores quando um keyframe é adicionado
     document.addEventListener('timelineUpdated', updateTimelineMarkers);
 }
 
-export function initialize() {
+export function initialize(characterAPI) {
     const container = document.getElementById('playback-panel');
     if (!container) {
         console.error("Container do painel de playback (#playback-panel) não foi encontrado no HTML.");
@@ -130,7 +142,6 @@ export function initialize() {
     dom.currentTime = container.querySelector('#current-time');
     dom.totalDuration = container.querySelector('#total-duration');
     dom.allControls = container.querySelectorAll('button, input');
-    // CORREÇÃO: A query agora encontrará o elemento
     dom.markersContainer = container.querySelector('#timeline-markers-container');
     
     setupEventListeners();

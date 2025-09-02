@@ -18,15 +18,17 @@
         <div class="control-group" id="mouth-y-module"></div>
     </aside>
 
-    <main id="stage">
+   <main id="stage">
+    <canvas id="stage-canvas" width="1920" height="1080"></canvas>
+    <div id="character-container" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none;">
         <div id="character">
             <div id="eyes-container" class="eyes-container male">
-
+                <!-- Olho Esquerdo -->
                 <div class="eye left-eye">
                     <div class="iris"><div class="pupil"><div class="highlight"></div></div></div>
                     <div class="eyebrow"></div>
-                                    <div class="eye-outline">
-                    <svg class="eye-outline-svg" viewBox="0 0 815.91205 1057.7094" xmlns="http://www.w3.org/2000/svg">
+                    <div class="eye-outline">
+                        <svg class="eye-outline-svg" viewBox="0 0 815.91205 1057.7094" xmlns="http://www.w3.org/2000/svg">
                         <defs id="defs1" />
                         <g id="g2" transform="translate(-88.129036,-6.7571699)">
                             <g id="g1" transform="matrix(0.73793676,0,0,0.73793676,131.17535,138.84785)">
@@ -35,18 +37,19 @@
                             <path style="fill:#ffffff;stroke-width:3.57225" d="M 436.38554,1016.3782 C 284.37747,988.73411 164.53442,857.22836 135.50675,686.219 c -8.81508,-51.93188 -5.69301,-141.28803 6.56479,-187.88969 32.77424,-124.60099 103.37783,-218.00547 202.43575,-267.81082 124.81902,-62.75777 269.34122,-37.45825 371.74689,65.07666 62.75763,62.83684 104.2675,145.40543 119.80037,238.29868 4.85547,29.038 5.74811,49.0065 4.14413,92.70801 -2.82508,76.97195 -17.3271,133.1766 -50.40745,195.36117 -50.13425,94.24264 -129.01096,160.22191 -223.82942,187.23019 -29.9343,8.5265 -100.64092,12.4472 -129.57627,7.185 z" id="path2" />
                         </g>
                     </svg>
-                </div>
+                    </div>
                     <div class="eye-closed-container">
                         <img src="assets/closed_eyes_m.svg" class="closed-eye-m" alt="Olho masculino fechado">
                         <img src="assets/closed_eyes_f.svg" class="closed-eye-f" alt="Olho feminino fechado">
                     </div>
                 </div>
 
+                <!-- Olho Direito -->
                 <div class="eye right-eye">
                     <div class="iris"><div class="pupil"><div class="highlight"></div></div></div>
                     <div class="eyebrow"></div>
-                                   <div class="eye-outline">
-                    <svg class="eye-outline-svg" viewBox="0 0 815.91205 1057.7094" xmlns="http://www.w3.org/2000/svg">
+                    <div class="eye-outline">
+                        <svg class="eye-outline-svg" viewBox="0 0 815.91205 1057.7094" xmlns="http://www.w3.org/2000/svg">
                         <defs id="defs1" />
                         <g id="g2" transform="translate(-88.129036,-6.7571699)">
                             <g id="g1" transform="matrix(0.73793676,0,0,0.73793676,131.17535,138.84785)">
@@ -55,20 +58,20 @@
                             <path style="fill:#ffffff;stroke-width:3.57225" d="M 436.38554,1016.3782 C 284.37747,988.73411 164.53442,857.22836 135.50675,686.219 c -8.81508,-51.93188 -5.69301,-141.28803 6.56479,-187.88969 32.77424,-124.60099 103.37783,-218.00547 202.43575,-267.81082 124.81902,-62.75777 269.34122,-37.45825 371.74689,65.07666 62.75763,62.83684 104.2675,145.40543 119.80037,238.29868 4.85547,29.038 5.74811,49.0065 4.14413,92.70801 -2.82508,76.97195 -17.3271,133.1766 -50.40745,195.36117 -50.13425,94.24264 -129.01096,160.22191 -223.82942,187.23019 -29.9343,8.5265 -100.64092,12.4472 -129.57627,7.185 z" id="path2" />
                         </g>
                     </svg>
-                </div>
+                    </div>
                     <div class="eye-closed-container">
                         <img src="assets/closed_eyes_m.svg" class="closed-eye-m" alt="Olho masculino fechado">
                         <img src="assets/closed_eyes_f.svg" class="closed-eye-f" alt="Olho feminino fechado">
                     </div>
                 </div>
-
             </div>
             <div id="mouth-container" class="mouth-container">
                 <img id="mouth" src="BOCAS/FELIZ.svg" alt="Boca do personagem">
             </div>
         </div>
-        <div id="gaze-hud-container"></div>
-    </main>
+    </div>
+    <div id="gaze-hud-container"></div>
+</main>
 
     <aside id="right-panel" class="panel"></aside>
     
@@ -77,6 +80,6 @@
     <footer id="playback-panel" class="panel"></footer>
 
     <script src="JS/libs/html2canvas.min.js"></script>
-    <script src="JS/main.js" type="module"></script>
+    <script src="JS/main.js" type="module"></script>    
 </body>
 </html>

@@ -7,17 +7,19 @@ import audioPlayer from '../playback-panel/audio-player.js';
  * @param {HTMLElement} container - O elemento pai onde o HTML será inserido.
  */
 function render(container) {
-    container.innerHTML = `
-        <h3>Áudio</h3>
-        <div id="audio-controls">
-            <input type="file" id="audio-file-input" accept="audio/*" style="display:none">
-            <label for="audio-file-input" id="upload-audio-label" class="btn btn-primary">Carregar Áudio</label>
-            <div id="audio-info" class="status-display" style="display: none;">
-                <span id="audio-status" class="status-text">Aguardando áudio...</span>
-                <button id="cancel-audio-btn" class="btn btn-danger" title="Remover Áudio">X</button>
-            </div>
-        </div>
-    `;
+container.innerHTML = `
+  <h3>Áudio</h3>
+  <div id="audio-controls">
+    <input type="file" id="audio-file-input" accept="audio/*" style="display:none">
+    <label id="upload-audio-label" for="audio-file-input" class="btn">Carregar Áudio</label>
+    <button id="cancel-audio-btn" style="display:none;">Cancelar</button>    
+    <button id="render-video-btn" class="btn" style="background-color: var(--cor-realce); color: white; margin-top: 10px;">
+      Renderizar Vídeo
+    </button>
+  </div>
+  <div id="audio-info"></div>
+  <div id="audio-status"></div>
+`;
 }
 
 /**
@@ -73,7 +75,7 @@ export function initialize() {
         uploadLabel: container.querySelector('#upload-audio-label'),
         audioInfo: container.querySelector('#audio-info'),
         statusText: container.querySelector('#audio-status'),
-        cancelBtn: container.querySelector('#cancel-audio-btn')
+        cancelBtn: container.querySelector('#cancel-audio-btn'),
     };
 
     domElements.fileInput.addEventListener('change', (event) => handleFileSelect(event, domElements));

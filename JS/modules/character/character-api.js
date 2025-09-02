@@ -32,13 +32,29 @@ const api = {
         });
     },  
 
+    // setMouth: (key) => {
+    //     if (!key || !dom.mouthImage) return;
+    //     const svgFile = mouthMap[key];
+    //     if (svgFile && !dom.mouthImage.src.endsWith(svgFile)) {
+    //         dom.mouthImage.src = `BOCAS/${svgFile}`;
+    //     }
+    // },
+
     setMouth: (key) => {
-        if (!key || !dom.mouthImage) return;
-        const svgFile = mouthMap[key];
-        if (svgFile && !dom.mouthImage.src.endsWith(svgFile)) {
-            dom.mouthImage.src = `BOCAS/${svgFile}`;
-        }
-    },
+    if (!key || !dom.mouthImage) {
+        console.warn("setMouth: chave ou mouthImage inválida", { key, mouthImage: dom.mouthImage });
+        return;
+    }
+    const svgFile = mouthMap[key];
+    if (!svgFile) {
+        console.warn("setMouth: chave não encontrada no mouthMap", key);
+        return;
+    }
+    if (!dom.mouthImage.src.endsWith(svgFile)) {
+        console.log("setMouth: mudando para", svgFile);
+        dom.mouthImage.src = `BOCAS/${svgFile}`;
+    }
+},
 
     setMouthSize: (size) => {
         if (dom.mouthContainer) dom.mouthContainer.style.width = `${size}px`;

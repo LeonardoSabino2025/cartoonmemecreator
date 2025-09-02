@@ -1,5 +1,6 @@
 /* CSS/main.css */
 
+/* Importação de módulos CSS */
 @import url('modules/stage/stage-layout.css');
 @import url('modules/character/eyes.css');
 @import url('modules/character/mouth.css');
@@ -11,6 +12,7 @@
 @import url('modules/stage/gaze-hud.css');
 @import url('modules/playback-panel/waveform.css');
 
+/* Variáveis de tema */
 :root {
     --cor-fundo-palco: #00ff00;
     --cor-painel-fundo: #f0f2f5;
@@ -24,13 +26,13 @@
     --cor-perigo-hover: #c82333;
     --fonte-principal: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
-    /* VARIÁVEIS ADICIONADAS PARA POSICIONAMENTO DOS PAINÉIS */
+    /* Dimensões dos painéis */
     --painel-lateral-largura: 300px;
     --painel-lateral-espaco: 20px;
 }
 
-* { 
-    box-sizing: border-box; 
+* {
+    box-sizing: border-box;
 }
 
 body {
@@ -42,17 +44,17 @@ body {
 }
 
 .panel {
-    position: absolute; 
-    z-index: 1000; 
-    background-color: rgba(240, 242, 245, 0.9);
-    border: 1px solid var(--cor-borda); 
-    border-radius: 12px; 
+    position: fixed;
+    z-index: 1000;
+    background-color: rgba(240, 242, 245, 0.95);
+    border: 1px solid var(--cor-borda);
+    border-radius: 12px;
     padding: 20px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); 
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     display: flex;
-    flex-direction: column; 
-    gap: 25px; 
-    max-height: calc(100vh - 40px); 
+    flex-direction: column;
+    gap: 25px;
+    max-height: calc(100vh - 40px);
     overflow-y: auto;
     backdrop-filter: blur(4px);
 }
@@ -74,6 +76,7 @@ body {
 }
 
 #playback-panel {
+    position: fixed;
     bottom: 15px;
     left: 0;
     right: 0;
@@ -85,6 +88,9 @@ body {
     flex-direction: row;
     align-items: center;
     gap: 15px;
+    background-color: rgba(240, 242, 245, 0.95);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .panel-title {
@@ -93,6 +99,7 @@ body {
     margin: 0 0 10px 0;
     border-bottom: 1px solid var(--cor-borda);
     padding-bottom: 15px;
+    color: var(--cor-texto);
 }
 
 .control-group {
@@ -107,3 +114,44 @@ body {
     font-weight: 600;
     color: var(--cor-texto-secundario);
 }
+
+/* --- CANVAS DE GRAVAÇÃO (INVISÍVEL) --- */
+#stage-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: -webkit-crisp-edges;
+    image-rendering: pixelated;
+    background-color: #00ff00; /* Fundo verde visível no vídeo */
+    display: none
+}
+
+/* --- INDICADOR DE GRAVAÇÃO --- */
+#recording-indicator {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 16px;
+    height: 16px;
+    background-color: #ff0000;
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(255, 0, 0, 0.8);
+    animation: pulse 1.5s infinite alternate;
+    z-index: 2000;
+    display: none;
+}
+
+@keyframes pulse {
+    from {
+        transform: scale(0.8);
+        opacity: 0.7;
+    }
+    to {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+}   

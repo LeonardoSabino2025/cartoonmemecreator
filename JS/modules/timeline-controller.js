@@ -63,7 +63,11 @@ export function getValueAtTime(type, time) {
 }
 
 export function getTimeline(type) {
-    return timelines[type] || [];
+    if (!timelines[type]) {
+        console.warn(`Timeline "${type}" não existe. Criando nova.`);
+        timelines[type] = [];
+    }
+    return timelines[type];
 }
 
 /**

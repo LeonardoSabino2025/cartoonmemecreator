@@ -188,7 +188,16 @@ const api = {
     getCurrentTime: () => isPlaying ? audioContext.currentTime - startTime : pauseTime,
     getDuration: () => audioBuffer ? audioBuffer.duration : 0,
     isPlaying: () => isPlaying,
-    getAudioBuffer: () => audioBuffer
+    getAudioBuffer: () => audioBuffer,    
+    getAudioContext: () => audioContext
 };
 
 export default api;
+
+export function play() {
+    if (isPlaying) return;
+    isPlaying = true;
+
+    // Inicia a reprodução do áudio
+    sourceNode.start(0);
+}
