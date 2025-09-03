@@ -98,6 +98,23 @@ export function initialize() {
     api.setMouthYPosition(20);
     api.setExpression('happy');
     api.setGaze(0, 0);
+
+    let isMouthFlipped = false;
     
     return api;
+}
+
+/**
+ * Inverte ou restaura a orientação horizontal da boca
+ */
+flipMouthHorizontally: () => {
+    isMouthFlipped = !isMouthFlipped;
+    if (dom.mouthImage) {
+        dom.mouthImage.style.transform = isMouthFlipped ? 'scaleX(-1)' : 'scaleX(1)';
+    }
+    // Atualiza o texto do botão
+    const flipBtn = document.getElementById('flip-mouth-btn');
+    if (flipBtn) {
+        flipBtn.textContent = isMouthFlipped ? '🔁 Normal' : '🔄 Inverter Boca';
+    }
 }

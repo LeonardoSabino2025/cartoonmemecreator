@@ -28,6 +28,49 @@ function main() {
     slidersHandler.initialize(characterAPI);
     initializeGazeHud(characterAPI, timelineController);
 
+    // === BOTÃO PARA INVERTER A BOCA (estilo consistente com o painel) ===
+    const flipMouthBtn = document.createElement('button');
+    flipMouthBtn.textContent = 'Inverter Boca';
+    flipMouthBtn.title = 'Inverte horizontalmente a imagem da boca';
+    flipMouthBtn.style.cssText = `
+        display: block;
+        width: 100%;
+        padding: 8px;
+        margin-top: 10px;
+        background-color: var(--cor-realce);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: background-color 0.2s ease, transform 0.1s ease;
+    `;
+
+    flipMouthBtn.addEventListener('mouseenter', () => {
+        flipMouthBtn.style.transform = 'scale(1.02)';
+    });
+
+    flipMouthBtn.addEventListener('mouseleave', () => {
+        flipMouthBtn.style.transform = 'scale(1)';
+    });
+
+    const characterPanel = document.getElementById('left-panel');
+    if (characterPanel) {
+        characterPanel.appendChild(flipMouthBtn);
+    }
+
+    let isMouthFlipped = false;
+
+    flipMouthBtn.addEventListener('click', () => {
+        const mouthImage = document.getElementById('mouth');
+        if (!mouthImage) return;
+
+        isMouthFlipped = !isMouthFlipped;
+        mouthImage.style.transform = isMouthFlipped ? 'scaleX(-1)' : 'scaleX(1)';
+        flipMouthBtn.textContent = isMouthFlipped ? 'Boca Invertida' : 'Inverter Boca';
+    });
+
+
     // === BOTÃO FLUTUANTE "GERAR VÍDEO" ===
     const renderBtn = document.createElement('button');
     renderBtn.id = 'render-video-btn';
