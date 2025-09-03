@@ -17,6 +17,7 @@ let isPlaying = false;
 let startTime = 0;
 let pauseTime = 0;
 let animationFrameId = null;
+let gainNode = null;
 
 // --- Variáveis para a lógica de Lip Sync Automático ---
 const mouthChangeInterval = 0.15;
@@ -236,4 +237,4 @@ const api = {
 export default api;
 
 // Exporta funções úteis
-export { formatTime };
+export { formatTime, gainNode }; // ✅ Exporte o gainNode

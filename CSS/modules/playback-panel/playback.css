@@ -128,3 +128,46 @@
     min-width: 120px;
     text-align: center;
 }
+
+#volume-panel {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 200px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    display: none;
+    padding: 10px;
+    text-align: center;
+}
+
+#volume-panel input[type="range"] {
+    width: 100%;
+    height: 100px;
+    -webkit-appearance: none;
+    background: #ccc;
+    border-radius: 5px;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+#volume-panel input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background-color: var(--cor-realce);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+#volume-panel input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background-color: var(--cor-realce);
+    border-radius: 50%;
+    cursor: pointer;
+}
