@@ -4,42 +4,41 @@ import * as timelineController from '../timeline-controller.js';
 import { getState } from '../character/character-state.js';
 import { expressionPresets } from '../character/expression-presets.js';
 
-// Cria o contexto de áudio
+// --- Contexto de áudio e análise ---
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 const analyser = audioContext.createAnalyser();
 analyser.fftSize = 256;
 const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
-// --- Variáveis de estado do player ---
+let gainNode = null;
+
+// --- Estado do player ---
 let audioBuffer = null;
 let sourceNode = null;
 let isPlaying = false;
 let startTime = 0;
 let pauseTime = 0;
 let animationFrameId = null;
-let gainNode = null;
 
-// --- Variáveis para a lógica de Lip Sync Automático ---
+// --- Lógica do lip sync automático ---
 const mouthChangeInterval = 0.15;
 let lastMouthChangeTime = 0;
 let currentRandomMouth = null;
 const randomMouthList = ['a', 'o', 'e', 'u', 'i', 'm', 'ch', 'l', 'r'];
 
 /**
- * Cria o nó de ganho para controle de volume
+ * Cria e retorna o nó de ganho para monitor de volume
  */
 function createGainNode() {
     if (!gainNode) {
         gainNode = audioContext.createGain();
-        gainNode.gain.value = 1.0; // Volume padrão 100%
+        gainNode.gain.value = 1.0;
     }
     return gainNode;
 }
 
 /**
  * Formata segundos em MM:SS.mm
- * @param {number} seconds - Tempo em segundos
- * @returns {string} - Tempo formatado
  */
 function formatTime(seconds) {
     if (isNaN(seconds) || seconds < 0) return "00:00.00";
@@ -50,16 +49,14 @@ function formatTime(seconds) {
 }
 
 /**
- * Dispara um evento personalizado
- * @param {string} name - Nome do evento
- * @param {Object} detail - Dados do evento
+ * Dispara eventos customizados
  */
-function dispatchEvent(name, detail) {
+function fireEvent(name, detail) {
     document.dispatchEvent(new CustomEvent(name, { detail }));
 }
 
 /**
- * Loop principal de atualização do player
+ * Loop de atualização: lip-sync + animação
  */
 function updateLoop() {
     if (!isPlaying) {
@@ -76,14 +73,14 @@ function updateLoop() {
     const currentGender = timelineController.getValueAtTime('gender', currentTime);
 
     let mouthToRender = null;
+
     if (characterState.animationMode === 'auto') {
         analyser.getByteFrequencyData(dataArray);
-        const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
+        const average = dataArray.reduce((s, v) => s + v, 0) / dataArray.length;
 
         if (average > characterState.sensitivity) {
             if (currentTime - lastMouthChangeTime > mouthChangeInterval) {
-                const randomIndex = Math.floor(Math.random() * randomMouthList.length);
-                currentRandomMouth = randomMouthList[randomIndex];
+                currentRandomMouth = randomMouthList[Math.floor(Math.random() * randomMouthList.length)];
                 lastMouthChangeTime = currentTime;
             }
             mouthToRender = currentRandomMouth;
@@ -95,7 +92,7 @@ function updateLoop() {
         mouthToRender = timelineController.getValueAtTime('phoneme', currentTime);
     }
 
-    dispatchEvent('timeupdate', {
+    fireEvent('timeupdate', {
         currentTime,
         formattedTime: formatTime(currentTime),
         progress: (currentTime / audioBuffer.duration) * 100,
@@ -110,114 +107,106 @@ function updateLoop() {
     if (currentTime >= audioBuffer.duration) {
         api.pause();
         api.seek(audioBuffer.duration);
-        dispatchEvent('ended');
+        fireEvent('ended');
     } else {
         animationFrameId = requestAnimationFrame(updateLoop);
     }
 }
 
 /**
- * Reseta o estado do lip sync automático
+ * Reseta variáveis do lip sync automático
  */
-function resetAutoLipSyncState() {
+function resetLipSync() {
     lastMouthChangeTime = 0;
     currentRandomMouth = null;
 }
 
 /**
- * API principal do player de áudio
+ * API principal do player
  */
 const api = {
     /**
      * Carrega um arquivo de áudio
-     * @param {File} file - Arquivo de áudio
-     * @returns {Promise<number>} - Duração do áudio
      */
-    load: (file) => {
-        return new Promise((resolve, reject) => {
-            api.reset();
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                audioContext.decodeAudioData(e.target.result, (buffer) => {
-                    audioBuffer = buffer;
-                    dispatchEvent('loaded', {
-                        duration: audioBuffer.duration,
-                        formattedDuration: formatTime(audioBuffer.duration)
-                    });
-                    resolve(audioBuffer.duration);
-                }, (error) => reject(error));
-            };
-            reader.onerror = (error) => reject(error);
-            reader.readAsArrayBuffer(file);
-        });
-    },
+    load: (file) => new Promise((resolve, reject) => {
+        api.reset();
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            audioContext.decodeAudioData(e.target.result).then((buffer) => {
+                audioBuffer = buffer;
+                fireEvent('loaded', {
+                    duration: buffer.duration,
+                    formattedDuration: formatTime(buffer.duration)
+                });
+                resolve(buffer.duration);
+            }).catch(reject);
+        };
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(file);
+    }),
 
     /**
-     * Inicia a reprodução do áudio
+     * Inicia a reprodução
      */
     play: () => {
         if (isPlaying || !audioBuffer) return;
 
-        // Cria o nó de ganho se não existir
         createGainNode();
 
-        // Reinicia o sourceNode
         sourceNode = audioContext.createBufferSource();
         sourceNode.buffer = audioBuffer;
 
-        // Conecta a cadeia de áudio: source -> gain -> analyser -> destination
-sourceNode.connect(analyser);
-analyser.connect(gainNode);
-gainNode.connect(audioContext.destination);
+        // cadeia correta: source -> analyser -> gain -> destination
+        sourceNode.connect(analyser);
+        analyser.connect(gainNode);
+        gainNode.connect(audioContext.destination);
 
         startTime = audioContext.currentTime - pauseTime;
         sourceNode.start(0, pauseTime);
         isPlaying = true;
 
-        dispatchEvent('statechange', { isPlaying: true });
+        fireEvent('statechange', { isPlaying: true });
         updateLoop();
     },
 
     /**
-     * Pausa a reprodução do áudio
+     * Pausa a reprodução
      */
     pause: () => {
         if (!isPlaying || !sourceNode) return;
         pauseTime = audioContext.currentTime - startTime;
-        sourceNode.stop();
+        try { sourceNode.stop(); } catch (e) { /* noop */ }
         isPlaying = false;
 
-        resetAutoLipSyncState();
-        dispatchEvent('statechange', { isPlaying: false });
+        resetLipSync();
+        fireEvent('statechange', { isPlaying: false });
         cancelAnimationFrame(animationFrameId);
     },
 
     /**
-     * Posiciona o tempo de reprodução
-     * @param {number} time - Tempo em segundos
+     * Avança ou retrocede o tempo
      */
     seek: (time) => {
         const wasPlaying = isPlaying;
         if (isPlaying) api.pause();
 
         pauseTime = Math.max(0, Math.min(time, audioBuffer.duration));
+        resetLipSync();
 
-        resetAutoLipSyncState();
+        const key = timelineController.getValueAtTime('faceExpression', pauseTime);
+        const preset = expressionPresets[key] || expressionPresets['feliz_feliz'];
+        const gaze = timelineController.getValueAtTime('gaze', pauseTime);
+        const gender = timelineController.getValueAtTime('gender', pauseTime);
 
-        const currentExpressionKey = timelineController.getValueAtTime('faceExpression', pauseTime);
-        const currentPreset = expressionPresets[currentExpressionKey] || expressionPresets['feliz_feliz'];
-        const currentGaze = timelineController.getValueAtTime('gaze', pauseTime);
-        const currentGender = timelineController.getValueAtTime('gender', pauseTime);
-
-        dispatchEvent('timeupdate', {
+        fireEvent('timeupdate', {
             currentTime: pauseTime,
             formattedTime: formatTime(pauseTime),
             progress: (pauseTime / audioBuffer.duration) * 100,
             animationData: {
-                eyes: currentPreset.eyes,
-                mouth: currentPreset.mouth,
-                gaze: currentGaze,
-                gender: currentGender
+                eyes: preset.eyes,
+                mouth: preset.mouth,
+                gaze,
+                gender
             }
         });
 
@@ -225,33 +214,30 @@ gainNode.connect(audioContext.destination);
     },
 
     /**
-     * Reseta o player para o estado inicial
+     * Reseta o player
      */
     reset: () => {
         if (isPlaying) api.pause();
-
+        if (sourceNode) {
+            try { sourceNode.disconnect(); } catch (e) { /* noop */ }
+            sourceNode = null;
+        }
         audioBuffer = null;
-        sourceNode = null;
         pauseTime = 0;
         startTime = 0;
-
-        resetAutoLipSyncState();
+        resetLipSync();
         cancelAnimationFrame(animationFrameId);
-        dispatchEvent('unloaded');
+        fireEvent('unloaded');
     },
 
-    // --- Funções de consulta ---
-    formatTime: formatTime,
-    getCurrentTime: () => isPlaying ? audioContext.currentTime - startTime : pauseTime,
-    getDuration: () => audioBuffer ? audioBuffer.duration : 0,
+    // Getters
+    formatTime,
+    getCurrentTime: () => (isPlaying ? audioContext.currentTime - startTime : pauseTime),
+    getDuration: () => (audioBuffer ? audioBuffer.duration : 0),
     isPlaying: () => isPlaying,
     getAudioBuffer: () => audioBuffer,
     getAudioContext: () => audioContext,
     getGainNode: () => gainNode || createGainNode()
 };
 
-// Exporta a API principal
 export default api;
-
-// Exporta funções úteis
-export { formatTime, gainNode };
