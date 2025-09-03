@@ -550,6 +550,49 @@ input[type="range"]::-moz-range-thumb {
     text-align: center;
 }
 
+#volume-panel {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 200px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    display: none;
+    padding: 10px;
+    text-align: center;
+}
+
+#volume-panel input[type="range"] {
+    width: 100%;
+    height: 100px;
+    -webkit-appearance: none;
+    background: #ccc;
+    border-radius: 5px;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+#volume-panel input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background-color: var(--cor-realce);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+#volume-panel input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background-color: var(--cor-realce);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
 // File: c:\Users\Admin\Documents\Studio de Animação_ver3-GEMINI\CSS\modules\playback-panel\waveform.css
 /* CSS/modules/playback-panel/waveform.css */
 
@@ -934,13 +977,7 @@ export function getTimelines() {
 // File: c:\Users\Admin\Documents\Studio de Animação_ver3-GEMINI\JS\main.js
 /* JS/main.js */
 
-import {
-    startScreenRecording,
-    stopScreenRecording,
-    savePanelVisibility,
-    hidePanels,
-    restorePanels
-} from './modules/export/screen-recorder.js';
+import {startScreenRecording, stopScreenRecording, savePanelVisibility, hidePanels,restorePanels} from './modules/export/screen-recorder.js';
 import { initialize as initializeCharacterAPI } from './modules/character/character-api.js';
 import * as audioHandler from './modules/left-panel/audio-handler.js';
 import * as genderHandler from './modules/left-panel/gender-handler.js';
@@ -950,14 +987,13 @@ import { initialize as initializeWaveformHandler } from './modules/playback-pane
 import * as timelineController from './modules/timeline-controller.js';
 import { initialize as initializeRightPanel } from './modules/right-panel/right-panel-handler.js';
 import { initialize as initializeGazeHud } from './modules/stage/gaze-hud-handler.js';
-
-// Referência para o player de áudio
 import audioPlayer from './modules/playback-panel/audio-player.js';
 
 function main() {
     const characterAPI = initializeCharacterAPI();
 
-    initializePlaybackHandler(characterAPI);
+    // initializePlaybackHandler(characterAPI);
+    initializePlaybackHandler();
     initializeWaveformHandler();
     initializeRightPanel(characterAPI, timelineController);
     audioHandler.initialize();
@@ -1871,6 +1907,7 @@ let isPlaying = false;
 let startTime = 0;
 let pauseTime = 0;
 let animationFrameId = null;
+let gainNode = null;
 
 // --- Variáveis para a lógica de Lip Sync Automático ---
 const mouthChangeInterval = 0.15;
@@ -2090,7 +2127,7 @@ const api = {
 export default api;
 
 // Exporta funções úteis
-export { formatTime };
+export { formatTime, gainNode }; // ✅ Exporte o gainNode
 
 // File: c:\Users\Admin\Documents\Studio de Animação_ver3-GEMINI\JS\modules\playback-panel\playback-handler.js
 /* JS/modules/playback-panel/playback-handler.js */
@@ -2112,6 +2149,9 @@ function render(container) {
             <button id="play-pause-btn" title="Play">▶️</button>
             <button id="forward-btn" title="Avançar 2s">⏩</button>
             <button id="to-end-btn" title="Ir para o final">⏭️</button>
+            <button id="volume-toggle-btn" title="Volume" style="width: 40px; height: 40px; font-size: 1.5rem; color: var(--cor-texto); background-color: transparent; border: none; cursor: pointer;">
+                🔊
+            </button>
         </div>
         <div class="timeline-wrapper">
             <div class="timeline-container">
@@ -2149,6 +2189,12 @@ function updateTimelineMarkers() {
  * Adiciona todos os listeners de eventos para os controles e para o player de áudio.
  */
 function setupEventListeners() {
+    if (!dom.playPauseBtn || !dom.volumeToggleBtn) {
+        console.error("Elementos do playback não encontrados:", { playPauseBtn: dom.playPauseBtn, volumeToggleBtn: dom.volumeToggleBtn });
+        return;
+    }
+
+    // --- Controles de playback ---
     dom.playPauseBtn.addEventListener('click', () => {
         audioPlayer.isPlaying() ? audioPlayer.pause() : audioPlayer.play();
     });
@@ -2157,6 +2203,7 @@ function setupEventListeners() {
     dom.rewindBtn.addEventListener('click', () => audioPlayer.seek(audioPlayer.getCurrentTime() - 2));
     dom.forwardBtn.addEventListener('click', () => audioPlayer.seek(audioPlayer.getCurrentTime() + 2));
 
+    // --- Timeline: Arrasto em tempo real ---
     dom.timelineSlider.addEventListener('mousedown', () => { isScrubbing = true; });
     document.addEventListener('mouseup', () => { isScrubbing = false; });
 
@@ -2164,8 +2211,9 @@ function setupEventListeners() {
         const progress = dom.timelineSlider.value / 1000;
         const targetTime = audioPlayer.getDuration() * progress;
         dom.currentTime.textContent = audioPlayer.formatTime(targetTime);
+        document.dispatchEvent(new CustomEvent('timelineScrub', { detail: { progress: progress * 100 } }));
     });
-    
+
     dom.timelineSlider.addEventListener('change', () => {
         const progress = dom.timelineSlider.value / 1000;
         const targetTime = audioPlayer.getDuration() * progress;
@@ -2183,7 +2231,6 @@ function setupEventListeners() {
         dom.playPauseBtn.textContent = e.detail.isPlaying ? '⏸️' : '▶️';
         dom.playPauseBtn.title = e.detail.isPlaying ? 'Pause' : 'Play';
     });
-    
 
     document.addEventListener('unloaded', () => {
         dom.allControls.forEach(el => { el.disabled = true; });
@@ -2198,15 +2245,17 @@ function setupEventListeners() {
     document.addEventListener('timelineUpdated', updateTimelineMarkers);
 }
 
-export function initialize(characterAPI) {
+export function initialize() {
     const container = document.getElementById('playback-panel');
     if (!container) {
         console.error("Container do painel de playback (#playback-panel) não foi encontrado no HTML.");
         return;
     }
 
+    // ✅ Agora `render` está definida antes e é acessível
     render(container);
 
+    // Atribui os elementos ao objeto dom
     dom.toStartBtn = container.querySelector('#to-start-btn');
     dom.rewindBtn = container.querySelector('#rewind-btn');
     dom.playPauseBtn = container.querySelector('#play-pause-btn');
@@ -2215,11 +2264,97 @@ export function initialize(characterAPI) {
     dom.timelineSlider = container.querySelector('#timeline-slider');
     dom.currentTime = container.querySelector('#current-time');
     dom.totalDuration = container.querySelector('#total-duration');
+    dom.volumeToggleBtn = container.querySelector('#volume-toggle-btn');
     dom.allControls = container.querySelectorAll('button, input');
     dom.markersContainer = container.querySelector('#timeline-markers-container');
-    
+
+    // Cria o painel de volume flutuante
+    const volumePanel = document.createElement('div');
+    volumePanel.id = 'volume-panel';
+    volumePanel.style.cssText = `
+        position: absolute;
+        top: -220px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60px;
+        height: 200px;
+        background-color: rgba(255, 255, 255, 0.95);
+        border: 1px solid #ccc;
+        border-radius: 12px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+        display: none;
+        padding: 10px;
+        text-align: center;
+    `;
+
+    // Cria o slider vertical
+    const volumeSlider = document.createElement('input');
+    volumeSlider.type = 'range';
+    volumeSlider.min = '0';
+    volumeSlider.max = '1';
+    volumeSlider.step = '0.01';
+    volumeSlider.value = '1';
+    volumeSlider.style.cssText = `
+        width: 100%;
+        height: 160px;
+        -webkit-appearance: none;
+        background: #e0e0e0;
+        border-radius: 10px;
+        outline: none;
+        margin: 10px 0;
+    `;
+
+    // Função para atualizar o fundo do slider
+    function updateSliderBackground() {
+        const value = volumeSlider.value;
+        volumeSlider.style.background = `linear-gradient(to top, #007bff 0%, #007bff ${value * 100}%, #e0e0e0 ${value * 100}%, #e0e0e0 100%)`;
+    }
+
+    // Aplica o estilo inicial
+    updateSliderBackground();
+    volumeSlider.addEventListener('input', updateSliderBackground);
+
+    volumePanel.appendChild(volumeSlider);
+
+    // --- Listener para atualizar o volume ---
+    volumeSlider.addEventListener('input', () => {
+        const volume = parseFloat(volumeSlider.value);
+        if (!audioPlayer.gainNode) {
+            audioPlayer.gainNode = audioPlayer.getAudioContext().createGain();
+            audioPlayer.gainNode.connect(audioPlayer.getAudioContext().destination);
+        }
+        audioPlayer.gainNode.gain.setValueAtTime(volume, audioPlayer.getAudioContext().currentTime);
+    });
+
+    // --- Atualiza o valor do slider quando o áudio é carregado ---
+    document.addEventListener('loaded', () => {
+        volumeSlider.value = '1';
+        updateSliderBackground();
+        audioPlayer.gainNode?.gain.setValueAtTime(1, audioPlayer.getAudioContext().currentTime);
+    });
+
+    // ✅ Adiciona o volumePanel ao DOM apenas após a configuração
+    document.body.appendChild(volumePanel);
+
+    // --- Controle de volume ---
+    dom.volumeToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        volumePanel.style.display = volumePanel.style.display === 'block' ? 'none' : 'block';
+    });
+
+    // --- Evento para fechar o volume quando clicar fora ---
+    document.addEventListener('click', (e) => {
+        if (volumePanel && !volumePanel.contains(e.target) && e.target !== dom.volumeToggleBtn) {
+            volumePanel.style.display = 'none';
+        }
+    });
+
+    // ✅ Agora `setupEventListeners` está definida antes de ser chamada
     setupEventListeners();
     dom.allControls.forEach(el => { el.disabled = true; });
+
+    console.log("Playback Handler Inicializado. Volume Toggle:", dom.volumeToggleBtn);
 }
 
 // File: c:\Users\Admin\Documents\Studio de Animação_ver3-GEMINI\JS\modules\playback-panel\waveform-handler.js
@@ -2306,11 +2441,8 @@ function clearWaveform() {
  */
 function updateNeedlePosition(progress) {
     if (!needleElement) return;
-    // Multiplica por 10 porque o slider vai de 0-1000, mas o progresso vem como 0-100
-    // A propriedade `left` em % já espera um valor de 0 a 100.
     needleElement.style.left = `${progress}%`;
 }
-
 
 export function initialize() {
     const panel = document.getElementById('waveform-panel');
@@ -2330,7 +2462,11 @@ export function initialize() {
     
     // Escuta o evento de tempo para mover a agulha
     document.addEventListener('timeupdate', (e) => {
-        // O valor `e.detail.progress` já vem como uma porcentagem (0-100)
+        updateNeedlePosition(e.detail.progress);
+    });
+
+    // Escuta o evento de arrasto da timeline
+    document.addEventListener('timelineScrub', (e) => {
         updateNeedlePosition(e.detail.progress);
     });
 }
@@ -3346,6 +3482,49 @@ input[type="range"]::-moz-range-thumb {
     text-align: center;
 }
 
+#volume-panel {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 200px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    display: none;
+    padding: 10px;
+    text-align: center;
+}
+
+#volume-panel input[type="range"] {
+    width: 100%;
+    height: 100px;
+    -webkit-appearance: none;
+    background: #ccc;
+    border-radius: 5px;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+#volume-panel input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background-color: var(--cor-realce);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+#volume-panel input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background-color: var(--cor-realce);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
 // File: c:\Users\Admin\Documents\Studio de Animação_ver3-GEMINI\CSS\modules\playback-panel\waveform.css
 /* CSS/modules/playback-panel/waveform.css */
 
@@ -3643,13 +3822,7 @@ export function getTimelines() {
 // File: c:\Users\Admin\Documents\Studio de Animação_ver3-GEMINI\JS\main.js
 /* JS/main.js */
 
-import {
-    startScreenRecording,
-    stopScreenRecording,
-    savePanelVisibility,
-    hidePanels,
-    restorePanels
-} from './modules/export/screen-recorder.js';
+import {startScreenRecording, stopScreenRecording, savePanelVisibility, hidePanels,restorePanels} from './modules/export/screen-recorder.js';
 import { initialize as initializeCharacterAPI } from './modules/character/character-api.js';
 import * as audioHandler from './modules/left-panel/audio-handler.js';
 import * as genderHandler from './modules/left-panel/gender-handler.js';
@@ -3659,14 +3832,13 @@ import { initialize as initializeWaveformHandler } from './modules/playback-pane
 import * as timelineController from './modules/timeline-controller.js';
 import { initialize as initializeRightPanel } from './modules/right-panel/right-panel-handler.js';
 import { initialize as initializeGazeHud } from './modules/stage/gaze-hud-handler.js';
-
-// Referência para o player de áudio
 import audioPlayer from './modules/playback-panel/audio-player.js';
 
 function main() {
     const characterAPI = initializeCharacterAPI();
 
-    initializePlaybackHandler(characterAPI);
+    // initializePlaybackHandler(characterAPI);
+    initializePlaybackHandler();
     initializeWaveformHandler();
     initializeRightPanel(characterAPI, timelineController);
     audioHandler.initialize();
@@ -4580,6 +4752,7 @@ let isPlaying = false;
 let startTime = 0;
 let pauseTime = 0;
 let animationFrameId = null;
+let gainNode = null;
 
 // --- Variáveis para a lógica de Lip Sync Automático ---
 const mouthChangeInterval = 0.15;
@@ -4799,7 +4972,7 @@ const api = {
 export default api;
 
 // Exporta funções úteis
-export { formatTime };
+export { formatTime, gainNode }; // ✅ Exporte o gainNode
 
 // File: c:\Users\Admin\Documents\Studio de Animação_ver3-GEMINI\JS\modules\playback-panel\playback-handler.js
 /* JS/modules/playback-panel/playback-handler.js */
@@ -4821,6 +4994,9 @@ function render(container) {
             <button id="play-pause-btn" title="Play">▶️</button>
             <button id="forward-btn" title="Avançar 2s">⏩</button>
             <button id="to-end-btn" title="Ir para o final">⏭️</button>
+            <button id="volume-toggle-btn" title="Volume" style="width: 40px; height: 40px; font-size: 1.5rem; color: var(--cor-texto); background-color: transparent; border: none; cursor: pointer;">
+                🔊
+            </button>
         </div>
         <div class="timeline-wrapper">
             <div class="timeline-container">
@@ -4858,6 +5034,12 @@ function updateTimelineMarkers() {
  * Adiciona todos os listeners de eventos para os controles e para o player de áudio.
  */
 function setupEventListeners() {
+    if (!dom.playPauseBtn || !dom.volumeToggleBtn) {
+        console.error("Elementos do playback não encontrados:", { playPauseBtn: dom.playPauseBtn, volumeToggleBtn: dom.volumeToggleBtn });
+        return;
+    }
+
+    // --- Controles de playback ---
     dom.playPauseBtn.addEventListener('click', () => {
         audioPlayer.isPlaying() ? audioPlayer.pause() : audioPlayer.play();
     });
@@ -4866,6 +5048,7 @@ function setupEventListeners() {
     dom.rewindBtn.addEventListener('click', () => audioPlayer.seek(audioPlayer.getCurrentTime() - 2));
     dom.forwardBtn.addEventListener('click', () => audioPlayer.seek(audioPlayer.getCurrentTime() + 2));
 
+    // --- Timeline: Arrasto em tempo real ---
     dom.timelineSlider.addEventListener('mousedown', () => { isScrubbing = true; });
     document.addEventListener('mouseup', () => { isScrubbing = false; });
 
@@ -4873,8 +5056,9 @@ function setupEventListeners() {
         const progress = dom.timelineSlider.value / 1000;
         const targetTime = audioPlayer.getDuration() * progress;
         dom.currentTime.textContent = audioPlayer.formatTime(targetTime);
+        document.dispatchEvent(new CustomEvent('timelineScrub', { detail: { progress: progress * 100 } }));
     });
-    
+
     dom.timelineSlider.addEventListener('change', () => {
         const progress = dom.timelineSlider.value / 1000;
         const targetTime = audioPlayer.getDuration() * progress;
@@ -4892,7 +5076,6 @@ function setupEventListeners() {
         dom.playPauseBtn.textContent = e.detail.isPlaying ? '⏸️' : '▶️';
         dom.playPauseBtn.title = e.detail.isPlaying ? 'Pause' : 'Play';
     });
-    
 
     document.addEventListener('unloaded', () => {
         dom.allControls.forEach(el => { el.disabled = true; });
@@ -4907,15 +5090,17 @@ function setupEventListeners() {
     document.addEventListener('timelineUpdated', updateTimelineMarkers);
 }
 
-export function initialize(characterAPI) {
+export function initialize() {
     const container = document.getElementById('playback-panel');
     if (!container) {
         console.error("Container do painel de playback (#playback-panel) não foi encontrado no HTML.");
         return;
     }
 
+    // ✅ Agora `render` está definida antes e é acessível
     render(container);
 
+    // Atribui os elementos ao objeto dom
     dom.toStartBtn = container.querySelector('#to-start-btn');
     dom.rewindBtn = container.querySelector('#rewind-btn');
     dom.playPauseBtn = container.querySelector('#play-pause-btn');
@@ -4924,11 +5109,97 @@ export function initialize(characterAPI) {
     dom.timelineSlider = container.querySelector('#timeline-slider');
     dom.currentTime = container.querySelector('#current-time');
     dom.totalDuration = container.querySelector('#total-duration');
+    dom.volumeToggleBtn = container.querySelector('#volume-toggle-btn');
     dom.allControls = container.querySelectorAll('button, input');
     dom.markersContainer = container.querySelector('#timeline-markers-container');
-    
+
+    // Cria o painel de volume flutuante
+    const volumePanel = document.createElement('div');
+    volumePanel.id = 'volume-panel';
+    volumePanel.style.cssText = `
+        position: absolute;
+        top: -220px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60px;
+        height: 200px;
+        background-color: rgba(255, 255, 255, 0.95);
+        border: 1px solid #ccc;
+        border-radius: 12px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+        display: none;
+        padding: 10px;
+        text-align: center;
+    `;
+
+    // Cria o slider vertical
+    const volumeSlider = document.createElement('input');
+    volumeSlider.type = 'range';
+    volumeSlider.min = '0';
+    volumeSlider.max = '1';
+    volumeSlider.step = '0.01';
+    volumeSlider.value = '1';
+    volumeSlider.style.cssText = `
+        width: 100%;
+        height: 160px;
+        -webkit-appearance: none;
+        background: #e0e0e0;
+        border-radius: 10px;
+        outline: none;
+        margin: 10px 0;
+    `;
+
+    // Função para atualizar o fundo do slider
+    function updateSliderBackground() {
+        const value = volumeSlider.value;
+        volumeSlider.style.background = `linear-gradient(to top, #007bff 0%, #007bff ${value * 100}%, #e0e0e0 ${value * 100}%, #e0e0e0 100%)`;
+    }
+
+    // Aplica o estilo inicial
+    updateSliderBackground();
+    volumeSlider.addEventListener('input', updateSliderBackground);
+
+    volumePanel.appendChild(volumeSlider);
+
+    // --- Listener para atualizar o volume ---
+    volumeSlider.addEventListener('input', () => {
+        const volume = parseFloat(volumeSlider.value);
+        if (!audioPlayer.gainNode) {
+            audioPlayer.gainNode = audioPlayer.getAudioContext().createGain();
+            audioPlayer.gainNode.connect(audioPlayer.getAudioContext().destination);
+        }
+        audioPlayer.gainNode.gain.setValueAtTime(volume, audioPlayer.getAudioContext().currentTime);
+    });
+
+    // --- Atualiza o valor do slider quando o áudio é carregado ---
+    document.addEventListener('loaded', () => {
+        volumeSlider.value = '1';
+        updateSliderBackground();
+        audioPlayer.gainNode?.gain.setValueAtTime(1, audioPlayer.getAudioContext().currentTime);
+    });
+
+    // ✅ Adiciona o volumePanel ao DOM apenas após a configuração
+    document.body.appendChild(volumePanel);
+
+    // --- Controle de volume ---
+    dom.volumeToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        volumePanel.style.display = volumePanel.style.display === 'block' ? 'none' : 'block';
+    });
+
+    // --- Evento para fechar o volume quando clicar fora ---
+    document.addEventListener('click', (e) => {
+        if (volumePanel && !volumePanel.contains(e.target) && e.target !== dom.volumeToggleBtn) {
+            volumePanel.style.display = 'none';
+        }
+    });
+
+    // ✅ Agora `setupEventListeners` está definida antes de ser chamada
     setupEventListeners();
     dom.allControls.forEach(el => { el.disabled = true; });
+
+    console.log("Playback Handler Inicializado. Volume Toggle:", dom.volumeToggleBtn);
 }
 
 // File: c:\Users\Admin\Documents\Studio de Animação_ver3-GEMINI\JS\modules\playback-panel\waveform-handler.js
@@ -5015,11 +5286,8 @@ function clearWaveform() {
  */
 function updateNeedlePosition(progress) {
     if (!needleElement) return;
-    // Multiplica por 10 porque o slider vai de 0-1000, mas o progresso vem como 0-100
-    // A propriedade `left` em % já espera um valor de 0 a 100.
     needleElement.style.left = `${progress}%`;
 }
-
 
 export function initialize() {
     const panel = document.getElementById('waveform-panel');
@@ -5039,7 +5307,11 @@ export function initialize() {
     
     // Escuta o evento de tempo para mover a agulha
     document.addEventListener('timeupdate', (e) => {
-        // O valor `e.detail.progress` já vem como uma porcentagem (0-100)
+        updateNeedlePosition(e.detail.progress);
+    });
+
+    // Escuta o evento de arrasto da timeline
+    document.addEventListener('timelineScrub', (e) => {
         updateNeedlePosition(e.detail.progress);
     });
 }

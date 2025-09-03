@@ -17,8 +17,8 @@ function render(container) {
             <button id="play-pause-btn" title="Play">▶️</button>
             <button id="forward-btn" title="Avançar 2s">⏩</button>
             <button id="to-end-btn" title="Ir para o final">⏭️</button>
-            <button id="volume-toggle-btn" title="Volume" style="width: 40px; height: 40px; font-size: 1.5rem; color: var(--cor-texto); background-color: transparent; border: none; cursor: pointer;">
-                🔊
+            <button id="volume-btn" title="Volume" style="width: 40px; height: 40px; font-size: 1.5rem; color: var(--cor-texto); background-color: transparent; border: none; cursor: pointer;">
+              🔊
             </button>
         </div>
         <div class="timeline-wrapper">
@@ -40,9 +40,9 @@ function updateTimelineMarkers() {
     if (!dom.markersContainer) return;
     dom.markersContainer.innerHTML = '';
     const duration = audioPlayer.getDuration();
-    if (duration === 0) return;
+    if (!duration || duration === 0) return;
 
-    const allKeyTimes = timelineController.getAllKeyframeTimes();
+    const allKeyTimes = timelineController.getAllKeyframeTimes() || [];
 
     allKeyTimes.forEach(time => {
         const marker = document.createElement('div');
@@ -57,9 +57,15 @@ function updateTimelineMarkers() {
  * Adiciona todos os listeners de eventos para os controles e para o player de áudio.
  */
 function setupEventListeners() {
-    // Verifica se todos os elementos foram encontrados
-    if (!dom.playPauseBtn || !dom.toStartBtn || !dom.toEndBtn || !dom.rewindBtn || !dom.forwardBtn || !dom.timelineSlider || !dom.volumeToggleBtn) {
-        console.error("Um ou mais elementos do painel de playback não foram encontrados.");
+    // valida elementos essenciais
+    const required = [
+        'playPauseBtn', 'toStartBtn', 'toEndBtn',
+        'rewindBtn', 'forwardBtn', 'timelineSlider',
+        'currentTime', 'totalDuration', 'markersContainer'
+    ];
+    const missing = required.filter(k => !dom[k]);
+    if (missing.length) {
+        console.error('Playback: elementos faltando:', missing);
         return;
     }
 
@@ -69,8 +75,8 @@ function setupEventListeners() {
     });
     dom.toStartBtn.addEventListener('click', () => audioPlayer.seek(0));
     dom.toEndBtn.addEventListener('click', () => audioPlayer.seek(audioPlayer.getDuration()));
-    dom.rewindBtn.addEventListener('click', () => audioPlayer.seek(audioPlayer.getCurrentTime() - 2));
-    dom.forwardBtn.addEventListener('click', () => audioPlayer.seek(audioPlayer.getCurrentTime() + 2));
+    dom.rewindBtn.addEventListener('click', () => audioPlayer.seek(Math.max(0, audioPlayer.getCurrentTime() - 2)));
+    dom.forwardBtn.addEventListener('click', () => audioPlayer.seek(Math.min(audioPlayer.getDuration(), audioPlayer.getCurrentTime() + 2)));
 
     // --- Timeline: Arrasto em tempo real ---
     dom.timelineSlider.addEventListener('mousedown', () => { isScrubbing = true; });
@@ -80,7 +86,6 @@ function setupEventListeners() {
         const progress = dom.timelineSlider.value / 1000;
         const targetTime = audioPlayer.getDuration() * progress;
         dom.currentTime.textContent = audioPlayer.formatTime(targetTime);
-        // Dispara evento personalizado para atualizar a agulha em tempo real
         document.dispatchEvent(new CustomEvent('timelineScrub', { detail: { progress: progress * 100 } }));
     });
 
@@ -90,34 +95,31 @@ function setupEventListeners() {
         audioPlayer.seek(targetTime);
     });
 
-    // --- Controle de volume ---
-    dom.volumeToggleBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const volumePanel = document.getElementById('volume-panel');
-        if (!volumePanel) return;
-
-        // Alterna visibilidade do panel de volume
-        volumePanel.style.display = volumePanel.style.display === 'block' ? 'none' : 'block';
-    });
-
-    // --- Evento para fechar o volume quando clicar fora ---
-    document.addEventListener('click', (e) => {
-        const volumePanel = document.getElementById('volume-panel');
-        if (volumePanel && !volumePanel.contains(e.target) && e.target !== dom.volumeToggleBtn) {
-            volumePanel.style.display = 'none';
+    // Atualiza UI enquanto o áudio toca
+    document.addEventListener('timeupdate', () => {
+        const current = audioPlayer.getCurrentTime();
+        const duration = audioPlayer.getDuration() || 1;
+        if (!isNaN(current)) {
+            dom.currentTime.textContent = audioPlayer.formatTime(current);
+            if (!isScrubbing) {
+                const val = Math.round((current / duration) * 1000);
+                dom.timelineSlider.value = Math.min(1000, Math.max(0, val));
+            }
         }
     });
 
     // --- Listeners para eventos do Player ---
     document.addEventListener('loaded', (e) => {
-        dom.totalDuration.textContent = e.detail.formattedDuration;
+        dom.totalDuration.textContent = e.detail && e.detail.formattedDuration ? e.detail.formattedDuration : audioPlayer.formatTime(audioPlayer.getDuration());
         dom.allControls.forEach(el => { el.disabled = false; });
         updateTimelineMarkers();
     });
 
     document.addEventListener('statechange', (e) => {
-        dom.playPauseBtn.textContent = e.detail.isPlaying ? '⏸️' : '▶️';
-        dom.playPauseBtn.title = e.detail.isPlaying ? 'Pause' : 'Play';
+        dom.playPauseBtn.textContent = e.detail && e.detail.isPlaying ? '⏸️' : '▶️';
+        dom.playPauseBtn.title = e.detail && e.detail.isPlaying ? 'Pause' : 'Play';
+        // se tocar, esconda o painel de volume (outro módulo)
+        // (a lógica de esconder o painel fica no módulo de volume)
     });
 
     document.addEventListener('unloaded', () => {
@@ -133,6 +135,9 @@ function setupEventListeners() {
     document.addEventListener('timelineUpdated', updateTimelineMarkers);
 }
 
+/**
+ * Inicializa o painel de playback dentro do container #playback-panel
+ */
 export function initialize() {
     const container = document.getElementById('playback-panel');
     if (!container) {
@@ -151,10 +156,23 @@ export function initialize() {
     dom.timelineSlider = container.querySelector('#timeline-slider');
     dom.currentTime = container.querySelector('#current-time');
     dom.totalDuration = container.querySelector('#total-duration');
-    dom.volumeToggleBtn = container.querySelector('#volume-toggle-btn');
-    dom.allControls = container.querySelectorAll('button, input');
+    // CORREÇÃO: o botão no render tem id #volume-btn
+    dom.volumeBtn = container.querySelector('#volume-btn');
     dom.markersContainer = container.querySelector('#timeline-markers-container');
 
-    setupEventListeners();
+    // todos controles (inicialmente desabilitados até carregar audio)
+    dom.allControls = Array.from(container.querySelectorAll('button, input'));
     dom.allControls.forEach(el => { el.disabled = true; });
+
+    // configura os listeners (só prosseguir se elementos essenciais existirem)
+    setupEventListeners();
+
+    // tentativa de sincronizar estado inicial com audioPlayer (se já tiver algo carregado)
+    if (audioPlayer.getDuration && audioPlayer.getDuration() > 0) {
+        dom.totalDuration.textContent = audioPlayer.formatTime(audioPlayer.getDuration());
+        dom.allControls.forEach(el => { el.disabled = false; });
+        updateTimelineMarkers();
+    }
+
+    console.log('Playback handler initialized');
 }

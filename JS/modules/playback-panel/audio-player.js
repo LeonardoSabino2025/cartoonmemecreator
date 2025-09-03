@@ -26,6 +26,17 @@ let currentRandomMouth = null;
 const randomMouthList = ['a', 'o', 'e', 'u', 'i', 'm', 'ch', 'l', 'r'];
 
 /**
+ * Cria o nó de ganho para controle de volume
+ */
+function createGainNode() {
+    if (!gainNode) {
+        gainNode = audioContext.createGain();
+        gainNode.gain.value = 1.0; // Volume padrão 100%
+    }
+    return gainNode;
+}
+
+/**
  * Formata segundos em MM:SS.mm
  * @param {number} seconds - Tempo em segundos
  * @returns {string} - Tempo formatado
@@ -147,12 +158,17 @@ const api = {
     play: () => {
         if (isPlaying || !audioBuffer) return;
 
+        // Cria o nó de ganho se não existir
+        createGainNode();
+
         // Reinicia o sourceNode
         sourceNode = audioContext.createBufferSource();
         sourceNode.buffer = audioBuffer;
 
-        sourceNode.connect(analyser);
-        analyser.connect(audioContext.destination);
+        // Conecta a cadeia de áudio: source -> gain -> analyser -> destination
+sourceNode.connect(analyser);
+analyser.connect(gainNode);
+gainNode.connect(audioContext.destination);
 
         startTime = audioContext.currentTime - pauseTime;
         sourceNode.start(0, pauseTime);
@@ -230,11 +246,12 @@ const api = {
     getDuration: () => audioBuffer ? audioBuffer.duration : 0,
     isPlaying: () => isPlaying,
     getAudioBuffer: () => audioBuffer,
-    getAudioContext: () => audioContext
+    getAudioContext: () => audioContext,
+    getGainNode: () => gainNode || createGainNode()
 };
 
 // Exporta a API principal
 export default api;
 
 // Exporta funções úteis
-export { formatTime, gainNode }; // ✅ Exporte o gainNode
+export { formatTime, gainNode };
